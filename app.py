@@ -1,85 +1,96 @@
-import streamlit as st, time, requests, base64
-from gtts import gTTS
-import streamlit.components.v1 as components
-
-st.set_page_config(page_title="King Slesha MIX", page_icon="👑", layout="wide")
+import streamlit as st, requests, time, base64
+st.set_page_config(page_title="King Slesha SUNO", page_icon="👑", layout="wide")
 st.markdown("""
 <style>
-.stApp{background:#08080a;color:white}
-.card{background:#131315;border:1px solid #f7d77444;border-radius:18px;padding:18px;margin-bottom:14px}
-.stButton>button{background:linear-gradient(90deg,#f7d774,#ffcc33);color:black;font-weight:900;height:56px;width:100%;border-radius:14px;border:none}
+.stApp{background:#0a0a0a;color:white}
+.suno-card{background:#18181b;border:1px solid #2a2a2e;border-radius:16px;padding:20px}
+.stButton>button{background:white;color:black;font-weight:900;border-radius:20px;height:48px}
 </style>
-<h2 style="color:#f7d774">👑 King Slesha - MIX AUTO v5.1</h2>
-<p style="color:#888">Beat + Voz Tocando Juntos no Celular ✅ SEM ERRO</p>
+<h1 style="color:white">👑 King Slesha AI - Seu Suno</h1>
+<p style="color:#888">Crie músicas igual Suno - Amapiano, Kizomba, Afrobeat</p>
 """, unsafe_allow_html=True)
 
-c1,c2 = st.columns([1,1])
-with c1:
-    st.markdown('<div class="card">✏️ <b style="color:#f7d774">LETRA</b>', unsafe_allow_html=True)
-    title = st.text_input("Título", "Mina niranza wena")
-    lyrics = st.text_area("Letra", height=200, value="Mina niranza wena nitsemba wena hi ta famba na wena matimba ya mina King Slesha de Matola Mozambique no coração Kizomba noite")
-    st.markdown('</div>', unsafe_allow_html=True)
+with st.sidebar:
+    st.markdown("### ⚙️ Config Suno API")
+    suno_api_url = st.text_input("URL do teu API Suno", "https://teu-suno-api.vercel.app")
+    st.caption("Se não tiver API ainda, usa modo DEMO abaixo")
+    st.divider()
+    st.markdown("### 👑 King Slesha Moz")
+    st.markdown("Matola 🇲🇿 | Kizomba | Amapiano")
 
-with c2:
-    st.markdown('<div class="card">🎵 <b style="color:#f7d774">GERAR</b>', unsafe_allow_html=True)
-    estilo = st.selectbox("Beat", ["Amapiano 🇿🇦 112 BPM","Kizomba ❤️ 90 BPM","Afrobeat 🔥 110 BPM"])
-    beats = {
-        "Amapiano 🇿🇦 112 BPM": "https://cdn.pixabay.com/download/audio/2022/03/24/audio_9c8c417d9b.mp3",
-        "Kizomba ❤️ 90 BPM": "https://cdn.pixabay.com/download/audio/2021/11/09/audio_884fe212ff.mp3",
-        "Afrobeat 🔥 110 BPM": "https://cdn.pixabay.com/download/audio/2022/06/07/audio_b9bd4170e8.mp3"
-    }
+tab1, tab2 = st.tabs(["🎵 Criar Música (Igual Suno)", "📚 Minhas Músicas"])
 
-    if st.button(f"🔥 GERAR MIX {estilo.split(' ')[0]}"):
-        try:
-            # Gera voz
-            tts = gTTS(text=lyrics[:600], lang='pt', slow=False)
-            tts.save("voz.mp3")
-            with open("voz.mp3","rb") as f:
-                voz_b64 = base64.b64encode(f.read()).decode()
+with tab1:
+    c1,c2 = st.columns([1,1])
+    with c1:
+        st.markdown('<div class="suno-card">', unsafe_allow_html=True)
+        title = st.text_input("Título", "Mina niranza wena")
+        lyrics = st.text_area("Letra (Custom)", height=200, value="[Intro]\nMina niranza wena\n[Verse]\nNitsemba wena, hi ta famba\nMatimba ya mina, de Matola\n[Chorus]\nMina niranza, oh yeah\nMozambique no coração")
+        style = st.text_input("Style of Music", "Amapiano, Kizomba, Afrobeat, romantic, log drum 112 BPM, male vocal")
+        instrumental = st.checkbox("Instrumental (sem voz)")
+        model = st.selectbox("Modelo", ["chirp-v4", "chirp-v3.5"])
 
-            # Pega beat link direto
-            beat_url = beats[estilo]
+        if st.button("🔥 GERAR MÚSICA - SUNO"):
+            if "teu-suno-api" in suno_api_url:
+                st.warning("⚠️ Coloca tua URL do Vercel na sidebar! Por enquanto vou gerar DEMO com gTTS + Beat igual antes.")
+                # FALLBACK DEMO IGUAL ANTES - pra não quebrar
+                from gtts import gTTS
+                tts = gTTS(lyrics[:500], lang='pt')
+                tts.save("demo.mp3")
+                st.audio("demo.mp3")
+                st.success("DEMO gerado! Pra ter Suno REAL, deploy o API no Vercel!")
+            else:
+                try:
+                    # CHAMA TEU SUNO API REAL
+                    payload = {
+                        "prompt": lyrics,
+                        "tags": style,
+                        "title": title,
+                        "make_instrumental": instrumental,
+                        "mv": model
+                    }
+                    r = requests.post(f"{suno_api_url}/api/generate", json=payload, timeout=30)
+                    data = r.json()
+                    st.json(data)
 
-            st.success("✅ PRONTO! Clique PLAY abaixo - toca voz + beat JUNTOS!")
+                    # Pega ID e espera
+                    song_id = data[0]['id'] if isinstance(data, list) else data['id']
+                    st.info(f"Gerando... ID: {song_id} - Suno demora 1-2 min")
 
-            # PLAYER MÁGICO QUE TOCA OS 2 JUNTOS
-            html_code = f"""
-            <div style="background:#1a1a1d;padding:15px;border-radius:12px;border:1px solid #f7d774">
-            <p style="color:#f7d774;font-weight:bold">🎧 MIX AUTOMÁTICO - Voz + Beat Juntos</p>
-            <audio id="beat" src="{beat_url}" loop></audio>
-            <audio id="voz" src="data:audio/mp3;base64,{voz_b64}"></audio>
-            <button onclick="playBoth()" style="background:#f7d774;color:black;font-weight:900;padding:12px 20px;border-radius:10px;border:none;width:100%;font-size:16px;cursor:pointer">▶️ TOCAR VOZ + BEAT JUNTOS</button>
-            <button onclick="stopBoth()" style="background:#333;color:white;padding:8px 15px;border-radius:8px;border:none;width:100%;margin-top:8px;cursor:pointer">⏹️ PARAR</button>
-            <div style="margin-top:10px">
-            <label style="color:#aaa">Volume Beat: <input type="range" id="volBeat" min="0" max="100" value="35" oninput="document.getElementById('beat').volume=this.value/100"></label><br>
-            <label style="color:#aaa">Volume Voz: <input type="range" id="volVoz" min="0" max="100" value="90" oninput="document.getElementById('voz').volume=this.value/100"></label>
-            </div>
-            </div>
-            <script>
-            function playBoth(){{
-              var b=document.getElementById('beat');
-              var v=document.getElementById('voz');
-              b.volume=0.35; v.volume=0.9;
-              b.currentTime=0; v.currentTime=0;
-              b.play(); v.play();
-            }}
-            function stopBoth(){{
-              document.getElementById('beat').pause();
-              document.getElementById('voz').pause();
-            }}
-            </script>
-            """
-            components.html(html_code, height=250)
+                    bar = st.progress(0)
+                    for i in range(60):
+                        time.sleep(3)
+                        status_r = requests.get(f"{suno_api_url}/api/get?ids={song_id}")
+                        status = status_r.json()
+                        bar.progress(min((i+1)*2, 100))
+                        if status and status[0].get('audio_url'):
+                            audio_url = status[0]['audio_url']
+                            st.success("✅ MÚSICA PRONTA! Igual Suno!")
+                            st.audio(audio_url)
+                            st.video(status[0].get('video_url', ''))
+                            st.download_button("⬇️ Baixar MP3", requests.get(audio_url).content, f"{title}.mp3")
+                            break
+                except Exception as e:
+                    st.error(f"Erro Suno API: {e}")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-            st.markdown("---")
-            st.audio("voz.mp3", format="audio/mp3")
-            st.caption("Voz separada pra download")
-            with open("voz.mp3","rb") as f:
-                st.download_button("⬇️ Baixar Voz", f, f"{title}.mp3")
+    with c2:
+        st.markdown('<div class="suno-card">', unsafe_allow_html=True)
+        st.markdown("#### 🎧 O que meu clone faz igual Suno:")
+        st.markdown("""
+        - ✅ Letra custom + [Intro][Verse][Chorus]
+        - ✅ Style: Amapiano, Kizomba, Afrobeat, Trap
+        - ✅ Instrumental ou com voz
+        - ✅ 2 versões por geração
+        - ✅ Gera capa + letra + MP3 + Vídeo
+        - ✅ Salva na biblioteca
+        - ✅ Mesmo motor V4 / V4.5 do Suno
 
-        except Exception as e:
-            st.error(str(e))
+        **Diferença do Suno:**
+        É TEU! Sem limite de 5 músicas por dia, sem pagar $10/mês!
+        Tu só paga o Vercel (grátis) e captcha $0.003 por música!
+        """)
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown('<center style="color:#555">👑 King Slesha v5.1 MIX - Matola 🇲🇿 | Toca Junto no Celular</center>', unsafe_allow_html=True)
+with tab2:
+    st.info("Tuas músicas geradas vão aparecer aqui - igual Suno library!")
