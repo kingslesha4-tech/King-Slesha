@@ -1,4 +1,5 @@
 streamlit
 gTTS
 pydub
+pyaudioop
 requests
