@@ -2,7 +2,6 @@ import streamlit as st
 
 st.set_page_config(page_title="King Slesha Moz", page_icon="👑")
 
-# TIRA TUDO DE CIMA
 st.markdown("""
 <style>
 header {visibility: hidden;}
@@ -10,10 +9,15 @@ header {visibility: hidden;}
 footer {visibility: hidden;}
 .stDeployButton {display:none;}
 div[data-testid="stToolbar"] {visibility: hidden;}
+div[data-testid="stDecoration"] {visibility: hidden;}
+div[data-testid="stStatusWidget"] {visibility: hidden;}
+/* TIRA O MANAGE APP DE BAIXO */
+div[data-testid="stAppDeployButton"] {display: none;}
+.stAppDeployButton {display: none;}
+[data-testid="manage-app-button"] {display: none;}
 </style>
 """, unsafe_allow_html=True)
 
-# --- SÓ ISSO FICA ---
 st.markdown("## 👑 King Slesha Moz")
 
 precos = {
@@ -35,5 +39,5 @@ if st.button(f"PAGAR {valor}MT AGORA", use_container_width=True):
     if len(numero) < 9:
         st.error("Numero invalido!")
     else:
-        st.success(f"Enviado! Confirma com PIN no teu celular {numero}")
+        st.success(f"Pedido enviado para {numero}! Confirma no teu celular com teu PIN")
         st.balloons()
