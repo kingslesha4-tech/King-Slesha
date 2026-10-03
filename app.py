@@ -1,40 +1,33 @@
-import streamlit as st, requests, time
-st.set_page_config(page_title="King Slesha SUNO REAL", page_icon="👑", layout="wide")
-st.markdown("<h1>👑 King Slesha - SUNO REAL 100%</h1><p>Voz humana cantando de verdade - não demo!</p>", unsafe_allow_html=True)
+import streamlit as st, requests
+st.set_page_config(page_title="King Slesha FREE", page_icon="👑")
+st.markdown("<h1>👑 King Slesha - 100% GRÁTIS SEM MÁFIA</h1>", unsafe_allow_html=True)
+st.markdown("Gera música de verdade, sem pagar, sem API KEY!")
 
-api_key = st.sidebar.text_input("API KEY sunoapi.org", type="password")
-st.sidebar.link_button("Pegar API KEY $5", "https://sunoapi.org")
+prompt = st.text_input("Descreve o beat", "Amapiano log drum romantic Mozambique Kizomba 90 BPM warm bass")
+duration = st.slider("Segundos", 5, 30, 15)
 
-title = st.text_input("Título", "Mina niranza wena")
-lyrics = st.text_area("Letra", height=200, value="[Verse] Mina niranza wena nitsemba wena\n[Chorus] Matola Mozambique no coração")
-style = st.text_input("Estilo", "Amapiano romantic Kizomba 90 BPM male vocal")
+if st.button("🔥 GERAR GRÁTIS AGORA - REAL"):
+    with st.spinner("IA grátis gerando... 40s (primeira vez demora)"):
+        try:
+            from gradio_client import Client
+            client = Client("facebook/musicgen")
+            result = client.predict(
+                prompt,
+                duration,
+                api_name="/predict"
+            )
+            st.success("✅ BEAT REAL GERADO - GRÁTIS! SEM MÁFIA!")
+            st.audio(result)
+            st.download_button("⬇️ Baixar", open(result,"rb").read(), "king-slesha-beat.wav")
+        except:
+            st.info("Tentando servidor backup grátis...")
+            # Backup sem gradio_client
+            import base64
+            st.markdown("""
+            <iframe src="https://facebook-musicgen.hf.space" width="100%" height="600"></iframe>
+            """, unsafe_allow_html=True)
+            st.markdown("Usa o gerador acima - é 100% grátis, gera na hora!")
 
-if st.button("🔥 GERAR SUNO REAL - VOZ HUMANA"):
-    if not api_key:
-        st.error("Coloca API KEY da sunoapi.org na sidebar! Sem isso não funciona real!")
-    else:
-        headers = {"Authorization": f"Bearer {api_key}"}
-        # 1. Gera
-        r = requests.post("https://api.sunoapi.org/api/v1/generate", headers=headers, json={
-            "prompt": style,
-            "lyrics": lyrics,
-            "title": title,
-            "customMode": True,
-            "instrumental": False,
-            "model": "V4_5"
-        })
-        st.json(r.json())
-        task_id = r.json()['data']['taskId']
-        
-        bar = st.progress(0, text="Suno gerando tua música... 1-2 min")
-        for i in range(40):
-            time.sleep(5)
-            status = requests.get(f"https://api.sunoapi.org/api/v1/get?taskId={task_id}", headers=headers).json()
-            bar.progress((i+1)*2)
-            if status['data']['status'] == 'SUCCESS':
-                for track in status['data']['tracks']:
-                    st.success("✅ MÚSICA REAL PRONTA! VOZ HUMANA!")
-                    st.audio(track['audioUrl'])
-                    st.image(track['imageUrl'])
-                    st.download_button(f"⬇️ Baixar {track['title']}", requests.get(track['audioUrl']).content, f"{title}.mp3")
-                break
+st.markdown("---")
+st.markdown("**👑 Isso é de verdade grátis:**")
+st.markdown("- Sem API KEY\n- Sem pagar\n- Beat criado por IA na hora\n- Não é link Pixabay")
