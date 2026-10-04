@@ -16,72 +16,73 @@ st.markdown("<h1 style='background:black;color:gold;text-align:center;padding:20
 menu = st.sidebar.selectbox("Menu", ["Enviar Musica", "Painel King"])
 
 if menu == "Enviar Musica":
-    with st.form("envio"):
-        nome = st.text_input("Nome Artista *")
-        email_a = st.text_input("Email Artista *")
-        titulo = st.text_input("Titulo Musica *")
-        genero = st.selectbox("Genero", ["Amapiano", "Afrobeat", "Hip Hop", "Marrabenta", "Pandza", "Outro"])
+    st.subheader("Enviar Musica")
 
-        # OPÇÃO DE PAGAMENTO COMPLETA - BANCO DE VOLTA
-        st.write("---")
-        st.subheader("Forma de Receber 70%")
-        forma_pag = st.selectbox("Escolhe como quer receber", ["PayPal", "M-Pesa", "e-Mola", "Conta Bancaria"])
+    nome = st.text_input("Nome Artista *")
+    email_a = st.text_input("Email Artista *")
+    titulo = st.text_input("Titulo Musica *")
+    genero = st.selectbox("Genero", ["Amapiano", "Afrobeat", "Hip Hop", "Marrabenta", "Pandza", "Outro"])
 
-        paypal_a = ""
-        mpesa_num = ""
-        emola_num = ""
-        banco_nome = ""
-        banco_conta = ""
-        banco_nib = ""
+    st.write("---")
+    st.subheader("Forma de Receber 70%")
+    forma_pag = st.selectbox("Escolhe como quer receber", ["PayPal", "M-Pesa", "e-Mola", "Conta Bancaria"])
 
-        if forma_pag == "PayPal":
-            paypal_a = st.text_input("Seu PayPal 70% *", placeholder="seu@gmail.com")
-        elif forma_pag == "M-Pesa":
-            mpesa_num = st.text_input("Seu Numero M-Pesa *", placeholder="84xxxxxxx")
-        elif forma_pag == "e-Mola":
-            emola_num = st.text_input("Seu Numero e-Mola *", placeholder="82xxxxxxx")
-        elif forma_pag == "Conta Bancaria":
-            st.write("**Dados Bancarios - BANCO ANTIGO DE VOLTA**")
-            banco_nome = st.selectbox("Banco", ["BCI", "Millennium BIM", "Standard Bank", "Moza Banco", "ABSA", "Outro"])
-            banco_conta = st.text_input("Numero da Conta *")
-            banco_nib = st.text_input("NIB *", placeholder="0000...")
+    # AGORA MOSTRA SO O QUE ESCOLHEU - CORRIGIDO
+    paypal_a = ""
+    mpesa_num = ""
+    emola_num = ""
+    banco_nome = ""
+    banco_conta = ""
+    banco_nib = ""
 
-        mp3 = st.file_uploader("MP3/WAV/M4A *", type=["mp3","wav","m4a"])
-        capa = st.file_uploader("Capa 3000x3000 *", type=["jpg","png","jpeg"])
-        ok = st.checkbox(f"Aceito contrato 70/30 - PayPal Oficial: {PAYPAL_OFICIAL} *")
-        btn = st.form_submit_button("ENVIAR PARA KING", use_container_width=True, type="primary")
+    if forma_pag == "PayPal":
+        paypal_a = st.text_input("Seu PayPal 70% *", placeholder="seu@gmail.com")
+    elif forma_pag == "M-Pesa":
+        mpesa_num = st.text_input("Seu Numero M-Pesa *", placeholder="84xxxxxxx")
+    elif forma_pag == "e-Mola":
+        emola_num = st.text_input("Seu Numero e-Mola *", placeholder="82xxxxxxx")
+    elif forma_pag == "Conta Bancaria":
+        st.write("**Dados Bancarios - BANCO**")
+        banco_nome = st.selectbox("Banco", ["BCI", "Millennium BIM", "Standard Bank", "Moza Banco", "ABSA", "Outro"])
+        banco_conta = st.text_input("Numero da Conta *")
+        banco_nib = st.text_input("NIB *", placeholder="0000...")
 
-        if btn:
-            if not ok or not nome or not titulo or not mp3:
-                st.error("Preenche tudo!")
-            else:
-                isrc = "MZ-KSM-25-" + str(random.randint(10000,99999))
-                mp3_data = mp3.getvalue()
-                capa_data = capa.getvalue() if capa else None
+    st.write("---")
+    mp3 = st.file_uploader("MP3/WAV/M4A *", type=["mp3","wav","m4a"])
+    capa = st.file_uploader("Capa 3000x3000 *", type=["jpg","png","jpeg"])
+    ok = st.checkbox(f"Aceito contrato 70/30 - PayPal Oficial: {PAYPAL_OFICIAL} *")
 
-                nova = {
-                    "Data": datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
-                    "Artista": nome,
-                    "Musica": titulo,
-                    "Genero": genero,
-                    "Email": email_a,
-                    "Forma Pag": forma_pag,
-                    "PayPal Artista": paypal_a,
-                    "M-Pesa": mpesa_num,
-                    "e-Mola": emola_num,
-                    "Banco": banco_nome,
-                    "Conta": banco_conta,
-                    "NIB": banco_nib,
-                    "ISRC": isrc,
-                    "Status": "Pendente",
-                    "mp3_bytes": mp3_data,
-                    "mp3_nome": mp3.name,
-                    "capa_bytes": capa_data,
-                    "capa_nome": capa.name if capa else None
-                }
-                st.session_state["musicas"].append(nova)
-                st.success("Recebido! ISRC: " + isrc + " - Vamos distribuir!")
-                st.balloons()
+    if st.button("ENVIAR PARA KING", use_container_width=True, type="primary"):
+        if not ok or not nome or not titulo or not mp3:
+            st.error("Preenche tudo! Nome, Titulo, MP3 e marca contrato!")
+        else:
+            isrc = "MZ-KSM-25-" + str(random.randint(10000,99999))
+            mp3_data = mp3.getvalue()
+            capa_data = capa.getvalue() if capa else None
+
+            nova = {
+                "Data": datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
+                "Artista": nome,
+                "Musica": titulo,
+                "Genero": genero,
+                "Email": email_a,
+                "Forma Pag": forma_pag,
+                "PayPal Artista": paypal_a,
+                "M-Pesa": mpesa_num,
+                "e-Mola": emola_num,
+                "Banco": banco_nome,
+                "Conta": banco_conta,
+                "NIB": banco_nib,
+                "ISRC": isrc,
+                "Status": "Pendente",
+                "mp3_bytes": mp3_data,
+                "mp3_nome": mp3.name,
+                "capa_bytes": capa_data,
+                "capa_nome": capa.name if capa else None
+            }
+            st.session_state["musicas"].append(nova)
+            st.success("Recebido! ISRC: " + isrc)
+            st.balloons()
 
 else:
     st.subheader("Painel King Slesha")
@@ -96,15 +97,12 @@ else:
                 st.error("Senha incorreta!")
     else:
         st.success("Bem-vindo King!")
-
-        # TUAS COISAS - NUNCA MAIS APAGO
         col1, col2, col3 = st.columns(3)
         total = len(st.session_state["musicas"])
         pendentes = len([m for m in st.session_state["musicas"] if m["Status"] == "Pendente"])
         col1.metric("Total Musicas", total)
         col2.metric("Pendentes", pendentes)
         col3.metric("Status", "Online")
-
         col4, col5 = st.columns(2)
         col4.metric("PayPal Oficial", PAYPAL_OFICIAL)
         col5.metric("Divisao", "70/30")
@@ -118,43 +116,9 @@ else:
             df = pd.DataFrame([{k:v for k,v in m.items() if k not in ["mp3_bytes","capa_bytes"]} for m in st.session_state["musicas"]])
             st.dataframe(df, use_container_width=True)
             st.write("---")
-
             for i in range(len(st.session_state["musicas"])):
                 m = st.session_state["musicas"][i]
-                artista = m["Artista"]
-                musica = m["Musica"]
-                status = m["Status"]
-
-                with st.expander("MUSICA: " + artista + " - " + musica + " | " + status + " | " + m["Forma Pag"]):
-                    st.write("Artista: " + artista + " | Email: " + m["Email"] + " | Genero: " + m["Genero"])
-                    st.write("Forma Pag: " + m["Forma Pag"] + " | PayPal: " + m["PayPal Artista"] + " | M-Pesa: " + m["M-Pesa"])
-                    if m["Banco"]:
-                        st.write("Banco: " + m["Banco"] + " | Conta: " + m["Conta"] + " | NIB: " + m["NIB"])
-                    st.write("ISRC: " + m["ISRC"] + " | Data: " + m["Data"])
-
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.write("OUVIR MUSICA:")
-                        if m["mp3_bytes"] and len(m["mp3_bytes"]) > 1000:
-                            st.audio(m["mp3_bytes"], format="audio/mp3")
-                            st.download_button("BAIXAR MP3", m["mp3_bytes"], file_name=m["mp3_nome"], key=f"mp3_{i}")
-                        else:
-                            st.error("MP3 vazio - precisa reenviar")
-
-                    with col_b:
-                        if m["capa_bytes"]:
-                            st.write("CAPA:")
-                            st.image(m["capa_bytes"], width=200)
-                            st.download_button("BAIXAR CAPA", m["capa_bytes"], file_name=m["capa_nome"], key=f"capa_{i}")
-
-                    if status == "Pendente":
-                        if st.button("APROVAR ESTA MUSICA", key=f"aprov_{i}", type="primary", use_container_width=True):
-                            st.session_state["musicas"][i]["Status"] = "Aprovada"
-                            st.success(musica + " Aprovada!")
-                            st.rerun()
-                    else:
-                        st.success("Ja Aprovada")
-
-        if st.button("SAIR"):
-            st.session_state["logado"] = False
-            st.rerun()
+                with st.expander("MUSICA: " + m["Artista"] + " - " + m["Musica"] + " | " + m["Status"] + " | " + m["Forma Pag"]):
+                    st.write("Artista: " + m["Artista"] + " | Email: " + m["Email"])
+                    if m["Forma Pag"] == "PayPal":
+                        st.write("Forma:
