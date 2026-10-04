@@ -96,8 +96,8 @@ if menu == 'Enviar Musica':
             }
             st.session_state['musicas'].append(nova)
             barra.progress(100)
-            texto.write('Concluido 100%')
-            st.success('Recebido! ISRC ' + isrc + ' - Musica terminou!')
+            texto.write('Concluido 100% - Musica terminou!')
+            st.success('Recebido! ISRC ' + isrc)
             st.balloons()
 
 else:
@@ -115,8 +115,8 @@ else:
         col1, col2, col3 = st.columns(3)
         total = len(st.session_state['musicas'])
         pendentes = 0
-        for m in st.session_state['musicas']:
-            if m['Status'] == 'Pendente':
+        for mm in st.session_state['musicas']:
+            if mm['Status'] == 'Pendente':
                 pendentes = pendentes + 1
         col1.metric('Total Musicas', total)
         col2.metric('Pendentes', pendentes)
@@ -140,29 +140,29 @@ else:
                 musica = m['Musica']
                 status = m['Status']
                 forma = m['Forma Pag']
-                with st.expander('MUSICA ' + artista + ' - ' + musica + ' - ' + status + ' - ' + forma):
+                titulo_exp = 'MUSICA ' + artista + ' - ' + musica + ' - ' + status
+                with st.expander(titulo_exp):
                     st.write('Artista ' + artista + ' | Email ' + m['Email'])
-                    st.write('ISRC ' + m['ISRC'] + ' | Data ' + m['Data'])
-                    if forma == 'PayPal':
-                        st.write('Pagamento PayPal ' + m['PayPal Artista'])
-                    if forma == 'M-Pesa':
-                        st.write('Pagamento M-Pesa ' + m['M-Pesa'])
-                    if forma == 'e-Mola':
-                        st.write('Pagamento e-Mola ' + m['e-Mola'])
-                    if forma == 'Conta Bancaria':
-                        st.write('Pagamento Banco ' + m['Banco'] + ' Conta ' + m['Conta'])
+                    st.write('Forma ' + forma + ' | ISRC ' + m['ISRC'])
 
                     col_a, col_b = st.columns(2)
                     with col_a:
-                        st.write('OUVIR MUSICA')
                         if m['mp3_bytes'] and len(m['mp3_bytes']) > 1000:
                             st.audio(m['mp3_bytes'], format='audio/mp3')
-                            st.download_button('BAIXAR MP3', m['mp3_bytes'], file_name=m['mp3_nome'], key='mp3a_%d' % i)
+                            k1 = 'mp3_' + str(i)
+                            st.download_button('BAIXAR MP3', m['mp3_bytes'], file_name=m['mp3_nome'], key=k1)
                     with col_b:
                         if m['capa_bytes']:
-                            st.write('CAPA')
                             st.image(m['capa_bytes'], width=200)
-                            st.download_button('BAIXAR CAPA', m['capa_bytes'], file_name=m['capa_nome'], key='capa_%d' % i)
+                            k2 = 'capa_' + str(i)
+                            st.download_button('BAIXAR CAPA', m['capa_bytes'], file_name=m['capa_nome'], key=k2)
 
                     if status == 'Pendente':
-                        if st.button('APROVAR ESTA MUSICA', key='aprov
+                        k3 = 'aprov_' + str(i)
+                        if st.button('APROVAR ESTA MUSICA', key=k3, type='primary', use_container_width=True):
+                            st.session_state['musicas'][i]['Status'] = 'Aprovada'
+                            st.rerun()
+
+        if st.button('SAIR'):
+            st.session_state['logado'] = False
+            st.rerun()
