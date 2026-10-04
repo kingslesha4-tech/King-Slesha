@@ -6,177 +6,140 @@ import time
 
 PAYPAL_OFICIAL = 'Kingslesha4@gmail.com'
 SENHA_KING = 'chila1990'
+EMAIL_KING = 'kingslesha4@gmail.com'
 
 if 'musicas' not in st.session_state:
     st.session_state['musicas'] = []
 if 'pagamentos' not in st.session_state:
     st.session_state['pagamentos'] = []
+if 'users' not in st.session_state:
+    st.session_state['users'] = []
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
+if 'current_user' not in st.session_state:
+    st.session_state['current_user'] = None
+if 'is_king' not in st.session_state:
+    st.session_state['is_king'] = False
 
 st.set_page_config(page_title='King Slesha Moz', page_icon='KING')
 st.markdown("<h1 style='background:black;color:gold;text-align:center;padding:20px;border-radius:10px;'>KING SLESHA MOZ - DISTRIBUIDORA</h1>", unsafe_allow_html=True)
 
-menu = st.sidebar.selectbox('Menu', ['Enviar Musica', 'Painel King'])
+# FUNCAO PARA REGISTAR
+def registar_user(nome, email, senha):
+    for u in st.session_state['users']:
+        if u['email'].lower() == email.lower():
+            return False
+    st.session_state['users'].append({'nome': nome, 'email': email.lower(), 'senha': senha, 'data': datetime.datetime.now().strftime('%d/%m/%Y')})
+    return True
 
-if menu == 'Enviar Musica':
-    st.subheader('Enviar Musica')
-    nome = st.text_input('Nome Artista *')
-    email_a = st.text_input('Email Artista *')
-    titulo = st.text_input('Titulo Musica *')
-    genero = st.selectbox('Genero', ['Amapiano', 'Afrobeat', 'Hip Hop', 'Marrabenta', 'Pandza', 'Kizomba', 'Zouk', 'Afro House', 'R&B', 'Outro'])
+def login_user(email, senha):
+    # King entra
+    if email.lower() == EMAIL_KING.lower() and senha == SENHA_KING:
+        st.session_state['is_king'] = True
+        st.session_state['logado'] = True
+        st.session_state['current_user'] = {'nome': 'King Slesha', 'email': email}
+        return True
+    for u in st.session_state['users']:
+        if u['email'].lower() == email.lower() and u['senha'] == senha:
+            st.session_state['current_user'] = u
+            st.session_state['is_king'] = False
+            st.session_state['logado'] = True
+            return True
+    return False
 
-    st.write('---')
-    st.subheader('Forma de Receber 70%')
-    forma_pag = st.selectbox('Escolhe como quer receber', ['PayPal', 'M-Pesa', 'e-Mola', 'Conta Bancaria'])
-
-    paypal_a = ''
-    mpesa_num = ''
-    emola_num = ''
-    banco_nome = ''
-    banco_conta = ''
-    banco_nib = ''
-
-    if forma_pag == 'PayPal':
-        paypal_a = st.text_input('Seu PayPal 70% *', placeholder='seu@gmail.com')
-    if forma_pag == 'M-Pesa':
-        mpesa_num = st.text_input('Seu Numero M-Pesa *', placeholder='84xxxxxxx')
-    if forma_pag == 'e-Mola':
-        emola_num = st.text_input('Seu Numero e-Mola *', placeholder='82xxxxxxx')
-    if forma_pag == 'Conta Bancaria':
-        banco_nome = st.selectbox('Banco', ['BCI', 'Millennium BIM', 'Standard Bank', 'Moza Banco', 'ABSA', 'Outro'])
-        banco_conta = st.text_input('Numero da Conta *')
-        banco_nib = st.text_input('NIB *', placeholder='0000...')
-
-    st.write('---')
-    mp3 = st.file_uploader('MP3/WAV/M4A *', type=['mp3','wav','m4a'])
-    capa = st.file_uploader('Capa 3000x3000 *', type=['jpg','png','jpeg'])
-    ok = st.checkbox('Aceito contrato 70/30')
-
-    if st.button('ENVIAR PARA KING', use_container_width=True, type='primary'):
-        if not ok or not nome or not titulo or not mp3:
-            st.error('Preenche tudo!')
-        else:
-            texto = st.empty()
-            barra = st.progress(0)
-            texto.write('Iniciando envio 0%')
-            barra.progress(10)
-            time.sleep(0.3)
-            texto.write('Salvando MP3 30%')
-            barra.progress(30)
-            time.sleep(0.3)
-            texto.write('Salvando capa 60%')
-            barra.progress(60)
-            time.sleep(0.3)
-            texto.write('Gerando ISRC 85%')
-            barra.progress(85)
-            time.sleep(0.3)
-
-            isrc = 'MZ-KSM-25-' + str(random.randint(10000,99999))
-            mp3_data = mp3.getvalue()
-            capa_data = capa.getvalue() if capa else None
-
-            nova = {
-                'Data': datetime.datetime.now().strftime('%d/%m/%Y %H:%M'),
-                'Artista': nome,
-                'Musica': titulo,
-                'Genero': genero,
-                'Email': email_a,
-                'Forma Pag': forma_pag,
-                'PayPal Artista': paypal_a,
-                'M-Pesa': mpesa_num,
-                'e-Mola': emola_num,
-                'Banco': banco_nome,
-                'Conta': banco_conta,
-                'NIB': banco_nib,
-                'ISRC': isrc,
-                'Status': 'Pendente',
-                'Enviado Plataforma': 'Nao',
-                'Data Envio Plat': '',
-                'Plataformas': '',
-                'mp3_bytes': mp3_data,
-                'mp3_nome': mp3.name,
-                'capa_bytes': capa_data,
-                'capa_nome': capa.name if capa else None
-            }
-            st.session_state['musicas'].append(nova)
-            barra.progress(100)
-            texto.write('Concluido 100% - Musica terminou!')
-            st.success('Recebido! ISRC ' + isrc)
-            st.balloons()
-
+# MENU DINAMICO
+if not st.session_state['logado']:
+    menu = st.sidebar.selectbox('Menu', ['Login', 'Registar', 'Painel King'])
 else:
-    st.subheader('Painel King Slesha')
-    if not st.session_state['logado']:
-        senha = st.text_input('Senha King', type='password', placeholder='Digite sua senha')
-        if st.button('ENTRAR NO PAINEL', use_container_width=True, type='primary'):
-            if senha.lower().strip() == SENHA_KING:
-                st.session_state['logado'] = True
+    if st.session_state['is_king']:
+        menu = st.sidebar.selectbox('Menu King', ['Painel King', 'Sair'])
+    else:
+        menu = st.sidebar.selectbox('Menu Artista', ['Enviar Musica', 'Minhas Musicas', 'Sair'])
+        st.sidebar.success('Logado: ' + st.session_state['current_user']['nome'])
+
+# TELA DE REGISTAR
+if menu == 'Registar' and not st.session_state['logado']:
+    st.subheader('Criar Conta - Artista')
+    st.write('Cada cliente cria sua propria conta para entrar na plataforma')
+
+    nome_r = st.text_input('Nome Completo *', key='reg_nome')
+    email_r = st.text_input('Email *', placeholder='seu@gmail.com', key='reg_email')
+    senha_r = st.text_input('Senha *', type='password', key='reg_senha')
+    senha_r2 = st.text_input('Confirmar Senha *', type='password', key='reg_senha2')
+
+    st.write('---')
+    if st.button('CRIAR CONTA', type='primary', use_container_width=True):
+        if not nome_r or not email_r or not senha_r:
+            st.error('Preenche tudo!')
+        elif senha_r!= senha_r2:
+            st.error('Senhas diferentes!')
+        elif len(senha_r) < 4:
+            st.error('Senha minimo 4 caracteres!')
+        else:
+            if registar_user(nome_r, email_r, senha_r):
+                st.success('Conta criada com sucesso! Agora faz Login!')
+                st.balloons()
+                time.sleep(1)
                 st.rerun()
             else:
-                st.error('Senha incorreta!')
-    else:
-        st.success('Bem-vindo King!')
-        col1, col2, col3 = st.columns(3)
-        total = len(st.session_state['musicas'])
-        pendentes = 0
-        enviadas = 0
-        for mm in st.session_state['musicas']:
-            if mm['Status'] == 'Pendente':
-                pendentes = pendentes + 1
-            if mm.get('Enviado Plataforma') == 'Sim':
-                enviadas = enviadas + 1
-        col1.metric('Total Musicas', total)
-        col2.metric('Pendentes', pendentes)
-        col3.metric('Enviadas Plataforma', enviadas)
-        col4, col5 = st.columns(2)
-        col4.metric('PayPal Oficial', PAYPAL_OFICIAL)
-        col5.metric('Divisao', '70/30')
+                st.error('Email ja existe! Faz Login')
 
-        st.write('---')
-        # ABAS NOVAS - MUSICAS E PAGAMENTOS
-        aba1, aba2 = st.tabs(['MUSICAS PARA OUVIR E APROVAR', 'PAGAMENTOS DAS PLATAFORMAS'])
+    st.write('---')
+    st.write('**Ou**')
+    if st.button('Continuar com Google', use_container_width=True):
+        st.info('Para ativar Google Login de verdade, depois eu te ajudo a configurar com Firebase. Por enquanto cria conta com Email acima - funciona igual!')
+        # Simula login google
+        email_g = st.text_input('Coloca seu Gmail do Google', placeholder='seu@gmail.com', key='google_email')
+        if st.button('Entrar com este Gmail'):
+            if email_g:
+                # Cria conta automatica google
+                if registar_user(email_g.split('@')[0], email_g, 'google123'):
+                    login_user(email_g, 'google123')
+                    st.success('Entrou com Google: ' + email_g)
+                    st.rerun()
+                else:
+                    login_user(email_g, 'google123')
+                    st.rerun()
 
-        with aba1:
-            if total == 0:
-                st.info('Nenhuma musica ainda.')
-            else:
-                for i in range(len(st.session_state['musicas'])):
-                    m = st.session_state['musicas'][i]
-                    artista = m['Artista']
-                    musica = m['Musica']
-                    status = m['Status']
-                    env = m.get('Enviado Plataforma', 'Nao')
-                    titulo_exp = 'MUSICA ' + artista + ' - ' + musica + ' - ' + status + ' - Plat: ' + env
-                    with st.expander(titulo_exp):
-                        st.write('Artista: ' + artista + ' | Genero: ' + m.get('Genero',''))
-                        st.write('Email: ' + m['Email'] + ' | Forma: ' + m['Forma Pag'])
-                        st.write('ISRC: ' + m['ISRC'] + ' | Data: ' + m['Data'])
+    st.write('Ja tem conta? Vai em Login no menu lateral')
 
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            st.write('**MUSICA**')
-                            if m.get('mp3_bytes') and m['mp3_bytes'] is not None:
-                                if len(m['mp3_bytes']) > 100:
-                                    st.audio(m['mp3_bytes'], format='audio/mp3')
-                                    k1 = 'mp3_' + str(i)
-                                    st.download_button('BAIXAR MUSICA', m['mp3_bytes'], file_name=m['mp3_nome'], key=k1, use_container_width=True)
-                        with col_b:
-                            st.write('**CAPA**')
-                            if m.get('capa_bytes') and m['capa_bytes'] is not None:
-                                st.image(m['capa_bytes'], width=250)
-                                k2 = 'capa_' + str(i)
-                                st.download_button('BAIXAR CAPA', m['capa_bytes'], file_name=m['capa_nome'], key=k2, use_container_width=True)
+# TELA DE LOGIN
+if menu == 'Login' and not st.session_state['logado']:
+    st.subheader('Entrar na Plataforma')
+    email_l = st.text_input('Email *', placeholder='seu@gmail.com', key='login_email')
+    senha_l = st.text_input('Senha *', type='password', key='login_senha')
 
-                        st.write('---')
-                        if status == 'Pendente':
-                            k3 = 'aprov_' + str(i)
-                            if st.button('APROVAR ESTA MUSICA', key=k3, type='primary', use_container_width=True):
-                                st.session_state['musicas'][i]['Status'] = 'Aprovada'
-                                st.rerun()
-                        else:
-                            st.success('Aprovada')
-                            # OPCAO PARA MARCAR COMO ENVIADO PARA PLATAFORMA
-                            if env == 'Nao':
-                                st.write('**Enviar para plataformas?**')
-                                plats
+    if st.button('ENTRAR', type='primary', use_container_width=True):
+        if login_user(email_l, senha_l):
+            st.success('Bem-vindo!')
+            st.rerun()
+        else:
+            st.error('Email ou senha errada! Se nao tem conta, vai em Registar')
+
+    st.write('---')
+    st.write('**Ou entra com:**')
+    if st.button('Entrar com Google', key='login_google', use_container_width=True):
+        st.session_state['show_google_login'] = True
+
+    if st.session_state.get('show_google_login', False):
+        email_g = st.text_input('Seu Gmail', key='g_login')
+        if st.button('Confirmar Google Login'):
+            # Se ja existe, loga, se nao cria
+            existe = False
+            for u in st.session_state['users']:
+                if u['email'].lower() == email_g.lower():
+                    existe = True
+                    st.session_state['current_user'] = u
+                    st.session_state['logado'] = True
+                    st.session_state['is_king'] = False
+                    st.rerun()
+            if not existe and email_g:
+                registar_user(email_g.split('@')[0], email_g, 'google123')
+                login_user(email_g, 'google123')
+                st.rerun()
+
+    st.info('Nao tem conta? Clica em Registar no menu lateral')
+
+# ENVIAR MUSICA - SO SE LOGADO COMO ARTISTA
+if menu == 'Enviar Musica' and st.session_state['logado'] and not st.session_state['is_king']:
+    st.subheader('Enviar Musica - Log
