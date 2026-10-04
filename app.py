@@ -11,7 +11,7 @@ if "logado" not in st.session_state:
     st.session_state["logado"] = False
 
 st.set_page_config(page_title="King Slesha Moz", page_icon="KING")
-st.markdown("<h1 style='background:black;color:gold;text-align:center;padding:20px;border-radius:10px;'>KING SLESHA MOZ</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='background:black;color:gold;text-align:center;padding:20px;border-radius:10px;'>KING SLESHA MOZ - DISTRIBUIDORA</h1>", unsafe_allow_html=True)
 
 menu = st.sidebar.selectbox("Menu", ["Enviar Musica", "Painel King"])
 
@@ -19,20 +19,43 @@ if menu == "Enviar Musica":
     with st.form("envio"):
         nome = st.text_input("Nome Artista *")
         email_a = st.text_input("Email Artista *")
-        paypal_a = st.text_input("PayPal Artista 70% *")
         titulo = st.text_input("Titulo Musica *")
         genero = st.selectbox("Genero", ["Amapiano", "Afrobeat", "Hip Hop", "Marrabenta", "Pandza", "Outro"])
-        mp3 = st.file_uploader("MP3/WAV *", type=["mp3","wav","m4a"])
+
+        # OPÇÃO DE PAGAMENTO COMPLETA - BANCO DE VOLTA
+        st.write("---")
+        st.subheader("Forma de Receber 70%")
+        forma_pag = st.selectbox("Escolhe como quer receber", ["PayPal", "M-Pesa", "e-Mola", "Conta Bancaria"])
+
+        paypal_a = ""
+        mpesa_num = ""
+        emola_num = ""
+        banco_nome = ""
+        banco_conta = ""
+        banco_nib = ""
+
+        if forma_pag == "PayPal":
+            paypal_a = st.text_input("Seu PayPal 70% *", placeholder="seu@gmail.com")
+        elif forma_pag == "M-Pesa":
+            mpesa_num = st.text_input("Seu Numero M-Pesa *", placeholder="84xxxxxxx")
+        elif forma_pag == "e-Mola":
+            emola_num = st.text_input("Seu Numero e-Mola *", placeholder="82xxxxxxx")
+        elif forma_pag == "Conta Bancaria":
+            st.write("**Dados Bancarios - BANCO ANTIGO DE VOLTA**")
+            banco_nome = st.selectbox("Banco", ["BCI", "Millennium BIM", "Standard Bank", "Moza Banco", "ABSA", "Outro"])
+            banco_conta = st.text_input("Numero da Conta *")
+            banco_nib = st.text_input("NIB *", placeholder="0000...")
+
+        mp3 = st.file_uploader("MP3/WAV/M4A *", type=["mp3","wav","m4a"])
         capa = st.file_uploader("Capa 3000x3000 *", type=["jpg","png","jpeg"])
-        ok = st.checkbox("Aceito contrato 70/30 *")
+        ok = st.checkbox(f"Aceito contrato 70/30 - PayPal Oficial: {PAYPAL_OFICIAL} *")
         btn = st.form_submit_button("ENVIAR PARA KING", use_container_width=True, type="primary")
 
         if btn:
             if not ok or not nome or not titulo or not mp3:
-                st.error("Preenche tudo e coloca MP3!")
+                st.error("Preenche tudo!")
             else:
                 isrc = "MZ-KSM-25-" + str(random.randint(10000,99999))
-                # CORRIGIDO - USA getvalue() PARA NAO ESVAZIAR
                 mp3_data = mp3.getvalue()
                 capa_data = capa.getvalue() if capa else None
 
@@ -42,7 +65,13 @@ if menu == "Enviar Musica":
                     "Musica": titulo,
                     "Genero": genero,
                     "Email": email_a,
+                    "Forma Pag": forma_pag,
                     "PayPal Artista": paypal_a,
+                    "M-Pesa": mpesa_num,
+                    "e-Mola": emola_num,
+                    "Banco": banco_nome,
+                    "Conta": banco_conta,
+                    "NIB": banco_nib,
                     "ISRC": isrc,
                     "Status": "Pendente",
                     "mp3_bytes": mp3_data,
@@ -51,7 +80,7 @@ if menu == "Enviar Musica":
                     "capa_nome": capa.name if capa else None
                 }
                 st.session_state["musicas"].append(nova)
-                st.success("Recebido! ISRC: " + isrc)
+                st.success("Recebido! ISRC: " + isrc + " - Vamos distribuir!")
                 st.balloons()
 
 else:
@@ -68,6 +97,7 @@ else:
     else:
         st.success("Bem-vindo King!")
 
+        # TUAS COISAS - NUNCA MAIS APAGO
         col1, col2, col3 = st.columns(3)
         total = len(st.session_state["musicas"])
         pendentes = len([m for m in st.session_state["musicas"] if m["Status"] == "Pendente"])
@@ -95,25 +125,27 @@ else:
                 musica = m["Musica"]
                 status = m["Status"]
 
-                with st.expander("MUSICA: " + artista + " - " + musica + " | " + status):
-                    st.write("Artista: " + artista + " | Email: " + m["Email"])
-                    st.write("Genero: " + m["Genero"] + " | ISRC: " + m["ISRC"])
+                with st.expander("MUSICA: " + artista + " - " + musica + " | " + status + " | " + m["Forma Pag"]):
+                    st.write("Artista: " + artista + " | Email: " + m["Email"] + " | Genero: " + m["Genero"])
+                    st.write("Forma Pag: " + m["Forma Pag"] + " | PayPal: " + m["PayPal Artista"] + " | M-Pesa: " + m["M-Pesa"])
+                    if m["Banco"]:
+                        st.write("Banco: " + m["Banco"] + " | Conta: " + m["Conta"] + " | NIB: " + m["NIB"])
+                    st.write("ISRC: " + m["ISRC"] + " | Data: " + m["Data"])
 
                     col_a, col_b = st.columns(2)
                     with col_a:
                         st.write("OUVIR MUSICA:")
-                        # CORRIGIDO - AGORA TOCA
                         if m["mp3_bytes"] and len(m["mp3_bytes"]) > 1000:
                             st.audio(m["mp3_bytes"], format="audio/mp3")
-                            st.download_button("BAIXAR MP3", m["mp3_bytes"], file_name=m["mp3_nome"], key=f"mp3_{i}_{musica}")
+                            st.download_button("BAIXAR MP3", m["mp3_bytes"], file_name=m["mp3_nome"], key=f"mp3_{i}")
                         else:
-                            st.error("MP3 vazio - cliente precisa enviar de novo")
+                            st.error("MP3 vazio - precisa reenviar")
 
                     with col_b:
                         if m["capa_bytes"]:
                             st.write("CAPA:")
                             st.image(m["capa_bytes"], width=200)
-                            st.download_button("BAIXAR CAPA", m["capa_bytes"], file_name=m["capa_nome"], key=f"capa_{i}_{musica}")
+                            st.download_button("BAIXAR CAPA", m["capa_bytes"], file_name=m["capa_nome"], key=f"capa_{i}")
 
                     if status == "Pendente":
                         if st.button("APROVAR ESTA MUSICA", key=f"aprov_{i}", type="primary", use_container_width=True):
