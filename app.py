@@ -22,8 +22,8 @@ if menu == "Enviar Musica":
         paypal_a = st.text_input("PayPal Artista 70% *")
         titulo = st.text_input("Titulo Musica *")
         genero = st.selectbox("Genero", ["Amapiano", "Afrobeat", "Hip Hop", "Marrabenta", "Pandza", "Outro"])
-        mp3 = st.file_uploader("MP3/WAV *", type=["mp3","wav"])
-        capa = st.file_uploader("Capa 3000x3000 *", type=["jpg","png"])
+        mp3 = st.file_uploader("MP3/WAV *", type=["mp3","wav","m4a"])
+        capa = st.file_uploader("Capa 3000x3000 *", type=["jpg","png","jpeg"])
         ok = st.checkbox("Aceito contrato 70/30 *")
         btn = st.form_submit_button("ENVIAR PARA KING", use_container_width=True, type="primary")
 
@@ -32,6 +32,10 @@ if menu == "Enviar Musica":
                 st.error("Preenche tudo e coloca MP3!")
             else:
                 isrc = "MZ-KSM-25-" + str(random.randint(10000,99999))
+                # CORRIGIDO - USA getvalue() PARA NAO ESVAZIAR
+                mp3_data = mp3.getvalue()
+                capa_data = capa.getvalue() if capa else None
+
                 nova = {
                     "Data": datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
                     "Artista": nome,
@@ -41,9 +45,9 @@ if menu == "Enviar Musica":
                     "PayPal Artista": paypal_a,
                     "ISRC": isrc,
                     "Status": "Pendente",
-                    "mp3_bytes": mp3.read(),
+                    "mp3_bytes": mp3_data,
                     "mp3_nome": mp3.name,
-                    "capa_bytes": capa.read() if capa else None,
+                    "capa_bytes": capa_data,
                     "capa_nome": capa.name if capa else None
                 }
                 st.session_state["musicas"].append(nova)
@@ -90,28 +94,26 @@ else:
                 artista = m["Artista"]
                 musica = m["Musica"]
                 status = m["Status"]
-                isrc_val = m["ISRC"]
-                email_val = m["Email"]
-                paypal_val = m["PayPal Artista"]
-                genero_val = m["Genero"]
-                data_val = m["Data"]
 
                 with st.expander("MUSICA: " + artista + " - " + musica + " | " + status):
-                    st.write("Artista: " + artista + " | Email: " + email_val)
-                    st.write("Genero: " + genero_val + " | Data: " + data_val)
-                    st.write("ISRC: " + isrc_val + " | PayPal: " + paypal_val)
+                    st.write("Artista: " + artista + " | Email: " + m["Email"])
+                    st.write("Genero: " + m["Genero"] + " | ISRC: " + m["ISRC"])
 
                     col_a, col_b = st.columns(2)
                     with col_a:
                         st.write("OUVIR MUSICA:")
-                        st.audio(m["mp3_bytes"])
-                        st.download_button("BAIXAR MP3", m["mp3_bytes"], file_name=m["mp3_nome"], key=f"mp3_{i}")
+                        # CORRIGIDO - AGORA TOCA
+                        if m["mp3_bytes"] and len(m["mp3_bytes"]) > 1000:
+                            st.audio(m["mp3_bytes"], format="audio/mp3")
+                            st.download_button("BAIXAR MP3", m["mp3_bytes"], file_name=m["mp3_nome"], key=f"mp3_{i}_{musica}")
+                        else:
+                            st.error("MP3 vazio - cliente precisa enviar de novo")
 
                     with col_b:
                         if m["capa_bytes"]:
                             st.write("CAPA:")
                             st.image(m["capa_bytes"], width=200)
-                            st.download_button("BAIXAR CAPA", m["capa_bytes"], file_name=m["capa_nome"], key=f"capa_{i}")
+                            st.download_button("BAIXAR CAPA", m["capa_bytes"], file_name=m["capa_nome"], key=f"capa_{i}_{musica}")
 
                     if status == "Pendente":
                         if st.button("APROVAR ESTA MUSICA", key=f"aprov_{i}", type="primary", use_container_width=True):
