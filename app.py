@@ -22,7 +22,8 @@ if menu == 'Enviar Musica':
     nome = st.text_input('Nome Artista *')
     email_a = st.text_input('Email Artista *')
     titulo = st.text_input('Titulo Musica *')
-    genero = st.selectbox('Genero', ['Amapiano', 'Afrobeat', 'Hip Hop', 'Marrabenta', 'Pandza', 'Outro'])
+    # GENERO COM KIZOMBA DE VOLTA - TUA COISA
+    genero = st.selectbox('Genero', ['Amapiano', 'Afrobeat', 'Hip Hop', 'Marrabenta', 'Pandza', 'Kizomba', 'Zouk', 'Afro House', 'R&B', 'Outro'])
 
     st.write('---')
     st.subheader('Forma de Receber 70%')
@@ -140,28 +141,48 @@ else:
                 musica = m['Musica']
                 status = m['Status']
                 forma = m['Forma Pag']
+                genero_m = m.get('Genero', 'N/A')
                 titulo_exp = 'MUSICA ' + artista + ' - ' + musica + ' - ' + status
                 with st.expander(titulo_exp):
-                    st.write('Artista ' + artista + ' | Email ' + m['Email'])
-                    st.write('Forma ' + forma + ' | ISRC ' + m['ISRC'])
+                    st.write('Artista: ' + artista + ' | Genero: ' + genero_m)
+                    st.write('Email: ' + m['Email'] + ' | Forma: ' + forma)
+                    st.write('ISRC: ' + m['ISRC'] + ' | Data: ' + m['Data'])
 
+                    # PARTE DA MUSICA E CAPA - AGORA SEMPRE MOSTRA OS 2
+                    st.write('---')
                     col_a, col_b = st.columns(2)
                     with col_a:
-                        if m['mp3_bytes'] and len(m['mp3_bytes']) > 1000:
-                            st.audio(m['mp3_bytes'], format='audio/mp3')
-                            k1 = 'mp3_' + str(i)
-                            st.download_button('BAIXAR MP3', m['mp3_bytes'], file_name=m['mp3_nome'], key=k1)
-                    with col_b:
-                        if m['capa_bytes']:
-                            st.image(m['capa_bytes'], width=200)
-                            k2 = 'capa_' + str(i)
-                            st.download_button('BAIXAR CAPA', m['capa_bytes'], file_name=m['capa_nome'], key=k2)
+                        st.write('**MUSICA PARA OUVIR E BAIXAR**')
+                        if m.get('mp3_bytes') and m['mp3_bytes'] is not None:
+                            try:
+                                if len(m['mp3_bytes']) > 100:
+                                    st.audio(m['mp3_bytes'], format='audio/mp3')
+                                    k1 = 'mp3_' + str(i)
+                                    st.download_button('BAIXAR MUSICA', m['mp3_bytes'], file_name=m['mp3_nome'], key=k1, use_container_width=True)
+                                else:
+                                    st.warning('MP3 muito pequeno - reenvie')
+                            except:
+                                st.error('Erro no MP3')
+                        else:
+                            st.error('Musica nao encontrada - artista precisa reenviar')
 
+                    with col_b:
+                        st.write('**CAPA**')
+                        if m.get('capa_bytes') and m['capa_bytes'] is not None:
+                            st.image(m['capa_bytes'], width=250)
+                            k2 = 'capa_' + str(i)
+                            st.download_button('BAIXAR CAPA', m['capa_bytes'], file_name=m['capa_nome'], key=k2, use_container_width=True)
+                        else:
+                            st.warning('Sem capa')
+
+                    st.write('---')
                     if status == 'Pendente':
                         k3 = 'aprov_' + str(i)
                         if st.button('APROVAR ESTA MUSICA', key=k3, type='primary', use_container_width=True):
                             st.session_state['musicas'][i]['Status'] = 'Aprovada'
                             st.rerun()
+                    else:
+                        st.success('Ja Aprovada')
 
         if st.button('SAIR'):
             st.session_state['logado'] = False
