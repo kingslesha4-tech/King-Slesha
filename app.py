@@ -2,6 +2,7 @@ import streamlit as st
 import datetime
 import random
 import pandas as pd
+import time
 
 PAYPAL_OFICIAL = "Kingslesha4@gmail.com"
 SENHA_KING = "chila1990"
@@ -50,13 +51,37 @@ if menu == "Enviar Musica":
     capa = st.file_uploader("Capa 3000x3000 *", type=["jpg","png","jpeg"])
     ok = st.checkbox("Aceito contrato 70/30")
 
+    # BOTAO COM TRAÇO DE PROGRESSO QUE TU MARCOU NA FOTO
     if st.button("ENVIAR PARA KING", use_container_width=True, type="primary"):
         if not ok or not nome or not titulo or not mp3:
             st.error("Preenche tudo!")
         else:
+            # AQUI COMEÇA O TRAÇO QUE TU QUERES
+            st.write("---")
+            progresso_texto = st.empty()
+            barra = st.progress(0)
+
+            progresso_texto.write("Iniciando envio 0%")
+            barra.progress(10)
+            time.sleep(0.5)
+
+            progresso_texto.write("Salvando MP3 " + mp3.name + " 30%")
+            barra.progress(30)
+            time.sleep(0.5)
+
+            progresso_texto.write("Salvando capa 60%")
+            barra.progress(60)
+            time.sleep(0.5)
+
+            progresso_texto.write("Gerando ISRC e enviando para distribuidora 85%")
+            barra.progress(85)
+            time.sleep(0.5)
+
+            # SALVA DE VERDADE
             isrc = "MZ-KSM-25-" + str(random.randint(10000,99999))
             mp3_data = mp3.getvalue()
             capa_data = capa.getvalue() if capa else None
+
             nova = {
                 "Data": datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),
                 "Artista": nome,
@@ -78,7 +103,12 @@ if menu == "Enviar Musica":
                 "capa_nome": capa.name if capa else None
             }
             st.session_state["musicas"].append(nova)
-            st.success("Recebido! ISRC " + isrc)
+
+            barra.progress(100)
+            progresso_texto.write("Concluido 100%")
+            time.sleep(0.5)
+
+            st.success("Recebido com sucesso! ISRC " + isrc + " - Musica terminou de enviar!")
             st.balloons()
 
 else:
@@ -97,61 +127,4 @@ else:
         total = len(st.session_state["musicas"])
         pendentes = 0
         for m in st.session_state["musicas"]:
-            if m["Status"] == "Pendente":
-                pendentes = pendentes + 1
-        col1.metric("Total Musicas", total)
-        col2.metric("Pendentes", pendentes)
-        col3.metric("Status", "Online")
-        col4, col5 = st.columns(2)
-        col4.metric("PayPal Oficial", PAYPAL_OFICIAL)
-        col5.metric("Divisao", "70/30")
-
-        st.write("---")
-        st.subheader("Musicas para Ouvir, Baixar e Aprovar")
-
-        if total == 0:
-            st.info("Nenhuma musica ainda.")
-        else:
-            df = pd.DataFrame([{k:v for k,v in m.items() if k not in ["mp3_bytes","capa_bytes"]} for m in st.session_state["musicas"]])
-            st.dataframe(df, use_container_width=True)
-            st.write("---")
-            for i in range(len(st.session_state["musicas"])):
-                m = st.session_state["musicas"][i]
-                artista = m["Artista"]
-                musica = m["Musica"]
-                status = m["Status"]
-                forma = m["Forma Pag"]
-                with st.expander("MUSICA " + artista + " - " + musica + " - " + status + " - " + forma):
-                    st.write("Artista " + artista + " | Email " + m["Email"] + " | Genero " + m["Genero"])
-                    st.write("ISRC " + m["ISRC"] + " | Data " + m["Data"])
-                    if forma == "PayPal":
-                        st.write("Pagamento PayPal " + m["PayPal Artista"])
-                    if forma == "M-Pesa":
-                        st.write("Pagamento M-Pesa " + m["M-Pesa"])
-                    if forma == "e-Mola":
-                        st.write("Pagamento e-Mola " + m["e-Mola"])
-                    if forma == "Conta Bancaria":
-                        st.write("Pagamento Banco " + m["Banco"] + " Conta " + m["Conta"] + " NIB " + m["NIB"])
-
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.write("OUVIR MUSICA")
-                        if m["mp3_bytes"] and len(m["mp3_bytes"]) > 1000:
-                            st.audio(m["mp3_bytes"], format="audio/mp3")
-                            st.download_button("BAIXAR MP3", m["mp3_bytes"], file_name=m["mp3_nome"], key="mp3a_%d" % i)
-                        else:
-                            st.error("MP3 vazio")
-                    with col_b:
-                        if m["capa_bytes"]:
-                            st.write("CAPA")
-                            st.image(m["capa_bytes"], width=200)
-                            st.download_button("BAIXAR CAPA", m["capa_bytes"], file_name=m["capa_nome"], key="capa_%d" % i)
-
-                    if status == "Pendente":
-                        if st.button("APROVAR ESTA MUSICA", key="aprov_%d" % i, type="primary", use_container_width=True):
-                            st.session_state["musicas"][i]["Status"] = "Aprovada"
-                            st.rerun()
-
-        if st.button("SAIR"):
-            st.session_state["logado"] = False
-            st.rerun()
+            if m["Status"] == "P
