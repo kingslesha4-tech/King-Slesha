@@ -9,6 +9,8 @@ SENHA_KING = 'chila1990'
 
 if 'musicas' not in st.session_state:
     st.session_state['musicas'] = []
+if 'pagamentos' not in st.session_state:
+    st.session_state['pagamentos'] = []
 if 'logado' not in st.session_state:
     st.session_state['logado'] = False
 
@@ -22,7 +24,6 @@ if menu == 'Enviar Musica':
     nome = st.text_input('Nome Artista *')
     email_a = st.text_input('Email Artista *')
     titulo = st.text_input('Titulo Musica *')
-    # GENERO COM KIZOMBA DE VOLTA - TUA COISA
     genero = st.selectbox('Genero', ['Amapiano', 'Afrobeat', 'Hip Hop', 'Marrabenta', 'Pandza', 'Kizomba', 'Zouk', 'Afro House', 'R&B', 'Outro'])
 
     st.write('---')
@@ -90,6 +91,9 @@ if menu == 'Enviar Musica':
                 'NIB': banco_nib,
                 'ISRC': isrc,
                 'Status': 'Pendente',
+                'Enviado Plataforma': 'Nao',
+                'Data Envio Plat': '',
+                'Plataformas': '',
                 'mp3_bytes': mp3_data,
                 'mp3_nome': mp3.name,
                 'capa_bytes': capa_data,
@@ -116,74 +120,63 @@ else:
         col1, col2, col3 = st.columns(3)
         total = len(st.session_state['musicas'])
         pendentes = 0
+        enviadas = 0
         for mm in st.session_state['musicas']:
             if mm['Status'] == 'Pendente':
                 pendentes = pendentes + 1
+            if mm.get('Enviado Plataforma') == 'Sim':
+                enviadas = enviadas + 1
         col1.metric('Total Musicas', total)
         col2.metric('Pendentes', pendentes)
-        col3.metric('Status', 'Online')
+        col3.metric('Enviadas Plataforma', enviadas)
         col4, col5 = st.columns(2)
         col4.metric('PayPal Oficial', PAYPAL_OFICIAL)
         col5.metric('Divisao', '70/30')
 
         st.write('---')
-        st.subheader('Musicas para Ouvir, Baixar e Aprovar')
+        # ABAS NOVAS - MUSICAS E PAGAMENTOS
+        aba1, aba2 = st.tabs(['MUSICAS PARA OUVIR E APROVAR', 'PAGAMENTOS DAS PLATAFORMAS'])
 
-        if total == 0:
-            st.info('Nenhuma musica ainda.')
-        else:
-            df = pd.DataFrame([{k:v for k,v in m.items() if k not in ['mp3_bytes','capa_bytes']} for m in st.session_state['musicas']])
-            st.dataframe(df, use_container_width=True)
-            st.write('---')
-            for i in range(len(st.session_state['musicas'])):
-                m = st.session_state['musicas'][i]
-                artista = m['Artista']
-                musica = m['Musica']
-                status = m['Status']
-                forma = m['Forma Pag']
-                genero_m = m.get('Genero', 'N/A')
-                titulo_exp = 'MUSICA ' + artista + ' - ' + musica + ' - ' + status
-                with st.expander(titulo_exp):
-                    st.write('Artista: ' + artista + ' | Genero: ' + genero_m)
-                    st.write('Email: ' + m['Email'] + ' | Forma: ' + forma)
-                    st.write('ISRC: ' + m['ISRC'] + ' | Data: ' + m['Data'])
+        with aba1:
+            if total == 0:
+                st.info('Nenhuma musica ainda.')
+            else:
+                for i in range(len(st.session_state['musicas'])):
+                    m = st.session_state['musicas'][i]
+                    artista = m['Artista']
+                    musica = m['Musica']
+                    status = m['Status']
+                    env = m.get('Enviado Plataforma', 'Nao')
+                    titulo_exp = 'MUSICA ' + artista + ' - ' + musica + ' - ' + status + ' - Plat: ' + env
+                    with st.expander(titulo_exp):
+                        st.write('Artista: ' + artista + ' | Genero: ' + m.get('Genero',''))
+                        st.write('Email: ' + m['Email'] + ' | Forma: ' + m['Forma Pag'])
+                        st.write('ISRC: ' + m['ISRC'] + ' | Data: ' + m['Data'])
 
-                    # PARTE DA MUSICA E CAPA - AGORA SEMPRE MOSTRA OS 2
-                    st.write('---')
-                    col_a, col_b = st.columns(2)
-                    with col_a:
-                        st.write('**MUSICA PARA OUVIR E BAIXAR**')
-                        if m.get('mp3_bytes') and m['mp3_bytes'] is not None:
-                            try:
+                        col_a, col_b = st.columns(2)
+                        with col_a:
+                            st.write('**MUSICA**')
+                            if m.get('mp3_bytes') and m['mp3_bytes'] is not None:
                                 if len(m['mp3_bytes']) > 100:
                                     st.audio(m['mp3_bytes'], format='audio/mp3')
                                     k1 = 'mp3_' + str(i)
                                     st.download_button('BAIXAR MUSICA', m['mp3_bytes'], file_name=m['mp3_nome'], key=k1, use_container_width=True)
-                                else:
-                                    st.warning('MP3 muito pequeno - reenvie')
-                            except:
-                                st.error('Erro no MP3')
+                        with col_b:
+                            st.write('**CAPA**')
+                            if m.get('capa_bytes') and m['capa_bytes'] is not None:
+                                st.image(m['capa_bytes'], width=250)
+                                k2 = 'capa_' + str(i)
+                                st.download_button('BAIXAR CAPA', m['capa_bytes'], file_name=m['capa_nome'], key=k2, use_container_width=True)
+
+                        st.write('---')
+                        if status == 'Pendente':
+                            k3 = 'aprov_' + str(i)
+                            if st.button('APROVAR ESTA MUSICA', key=k3, type='primary', use_container_width=True):
+                                st.session_state['musicas'][i]['Status'] = 'Aprovada'
+                                st.rerun()
                         else:
-                            st.error('Musica nao encontrada - artista precisa reenviar')
-
-                    with col_b:
-                        st.write('**CAPA**')
-                        if m.get('capa_bytes') and m['capa_bytes'] is not None:
-                            st.image(m['capa_bytes'], width=250)
-                            k2 = 'capa_' + str(i)
-                            st.download_button('BAIXAR CAPA', m['capa_bytes'], file_name=m['capa_nome'], key=k2, use_container_width=True)
-                        else:
-                            st.warning('Sem capa')
-
-                    st.write('---')
-                    if status == 'Pendente':
-                        k3 = 'aprov_' + str(i)
-                        if st.button('APROVAR ESTA MUSICA', key=k3, type='primary', use_container_width=True):
-                            st.session_state['musicas'][i]['Status'] = 'Aprovada'
-                            st.rerun()
-                    else:
-                        st.success('Ja Aprovada')
-
-        if st.button('SAIR'):
-            st.session_state['logado'] = False
-            st.rerun()
+                            st.success('Aprovada')
+                            # OPCAO PARA MARCAR COMO ENVIADO PARA PLATAFORMA
+                            if env == 'Nao':
+                                st.write('**Enviar para plataformas?**')
+                                plats
