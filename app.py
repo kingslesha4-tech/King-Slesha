@@ -1,142 +1,159 @@
-import streamlit as st, datetime, random, string, requests, os, tempfile
+import streamlit as st, datetime, random, string
 from supabase import create_client
-from PIL import Image
 
 SUPABASE_URL = "https://hfjskhhjrdjuphkbjdpu.supabase.co"
 SUPABASE_KEY = "sb_publishable_gBj-IUXwTe8E1olKTLRBhg_l87QRjXu"
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-@st.cache_resource
-def get_supabase():
-    return create_client(SUPABASE_URL, SUPABASE_KEY)
-supabase = get_supabase()
+# CONFIG - TEU PAYPAL
+PAYPAL_OFICIAL = "Kingslesha4@gmail.com"
+MOZA_CONTA = "MOZA BANCO - KING SLESHA"
+TAXA_ARTISTA = 70
+TAXA_KING = 30
 
-st.set_page_config(page_title="KING V12 VIDEO", page_icon="👑", layout="centered")
-st.markdown("""<div style="text-align:center;background:black;padding:20px;border-radius:15px;border:3px solid red;">
-<h1 style="color:#1DB954;">👑 KING V12 - GERA VÍDEO</h1><p style="color:white;">Aprova > Baixa Vídeo > Posta no YouTube REAL</p></div><br>""", unsafe_allow_html=True)
+st.set_page_config(page_title="KING V15 OFICIAL", page_icon="👑", layout="centered")
+st.markdown(f"""<div style="text-align:center;background:linear-gradient(90deg,black,#FFD700);padding:20px;border-radius:15px;">
+<h1 style="color:white;margin:0;">👑 KING SLESHA MOZ V15</h1>
+<p style="color:black;font-weight:bold;">PayPal: {PAYPAL_OFICIAL} | TAXA {TAXA_ARTISTA}/{TAXA_KING} | Moza Banco</p>
+</div><br>""", unsafe_allow_html=True)
 
-def gen_codes():
-    return f"MZ-{''.join(random.choices(string.ascii_uppercase, k=3))}-{datetime.datetime.now().year}-{''.join(random.choices(string.digits, k=5))}", ''.join(random.choices(string.digits, k=12))
-
-def upload_file(bucket, file):
+def gen_codes(): return f"MZ-{''.join(random.choices(string.ascii_uppercase, k=3))}-{datetime.datetime.now().year}-{''.join(random.choices(string.digits, k=5))}", ''.join(random.choices(string.digits, k=12))
+def upload_file(b, f):
     try:
-        name = f"{datetime.datetime.now().timestamp()}_{file.name.replace(' ','_')}"
-        supabase.storage.from_(bucket).upload(name, file.getvalue(), {"content-type": file.type})
-        return supabase.storage.from_(bucket).get_public_url(name)
+        n = f"{datetime.datetime.now().timestamp()}_{f.name.replace(' ','_')}"
+        supabase.storage.from_(b).upload(n, f.getvalue(), {"content-type": f.type})
+        return supabase.storage.from_(b).get_public_url(n)
     except: return None
-
 def listar():
     try: return supabase.table("musicas").select("*").order("created_at", desc=True).execute().data
     except: return []
+def listar_ganhos():
+    try: return supabase.table("ganhos").select("*").order("created_at", desc=True).execute().data
+    except: return []
 
-def gerar_video(audio_url, capa_url, titulo):
-    try:
-        from moviepy.editor import AudioFileClip, ImageClip
-        # baixa audio e capa temp
-        tmpdir = tempfile.mkdtemp()
-        audio_path = os.path.join(tmpdir, "audio.mp3")
-        capa_path = os.path.join(tmpdir, "capa.jpg")
-        video_path = os.path.join(tmpdir, f"{titulo}.mp4")
-        
-        with open(audio_path, "wb") as f:
-            f.write(requests.get(audio_url).content)
-        with open(capa_path, "wb") as f:
-            f.write(requests.get(capa_url).content)
-        
-        audio = AudioFileClip(audio_path)
-        # resize capa pra 1280x720
-        img = Image.open(capa_path).convert("RGB")
-        img = img.resize((1280,720))
-        img.save(capa_path)
-        
-        clip = ImageClip(capa_path, duration=audio.duration)
-        clip = clip.set_audio(audio)
-        clip.write_videofile(video_path, fps=24, codec='libx264', audio_codec='aac')
-        return video_path
-    except Exception as e:
-        st.error(f"Erro gerar vídeo: {e} - Instala moviepy no requirements.txt")
-        return None
-
-menu = st.selectbox("MENU", ["🏠 CATÁLOGO", "🚀 SOU ARTISTA", "🔐 PAINEL KING"])
+menu = st.selectbox("MENU OFICIAL", ["🏠 CATÁLOGO", "🚀 SOU ARTISTA", "🔐 PAINEL KING", "💰 BANCO - Kingslesha4@gmail.com"])
 
 if menu == "🏠 CATÁLOGO":
     aprovadas = [m for m in listar() if m.get('status')=='aprovada']
-    t1,t2 = st.tabs(["🎧 Spotify", "📺 YouTube do Site"])
-    with t1:
-        for m in aprovadas:
-            with st.container(border=True):
-                c1,c2 = st.columns([1,2])
-                with c1:
-                    if m.get('capa_url'): st.image(m['capa_url'], use_container_width=True)
-                with c2:
+    if not aprovadas: st.info("Nenhuma música aprovada ainda. Seja o primeiro!")
+    else:
+        t1,t2 = st.tabs(["🎧 Spotify", "📺 YouTube"])
+        with t1:
+            for m in aprovadas:
+                with st.container(border=True):
+                    c1,c2 = st.columns([1,2])
+                    with c1:
+                        if m.get('capa_url'): st.image(m['capa_url'], use_container_width=True)
+                    with c2:
+                        st.markdown(f"**{m['titulo']}** - {m['artista']}")
+                        st.caption(f"ISRC {m.get('isrc','')}")
+                        if m.get('audio_url'): st.audio(m['audio_url'])
+        with t2:
+            for m in aprovadas:
+                with st.container(border=True):
+                    if m.get('capa_url'): st.image(m['capa_url'], width=300)
                     st.write(f"**{m['titulo']}** - {m['artista']}")
                     if m.get('audio_url'): st.audio(m['audio_url'])
-    with t2:
-        for m in aprovadas:
-            with st.container(border=True):
-                if m.get('capa_url'): st.image(m['capa_url'], use_container_width=True)
-                st.write(f"**{m['titulo']}** - {m['artista']}")
-                if m.get('audio_url'): st.audio(m['audio_url'])
 
 elif menu == "🚀 SOU ARTISTA":
-    titulo = st.text_input("Título *")
-    artista = st.text_input("Artista *")
-    tel = st.text_input("WhatsApp *")
-    f = st.file_uploader("Música MP3 *", type=['mp3','wav','m4a'])
-    capa = st.file_uploader("Capa JPG *", type=['jpg','jpeg','png'])
-    if st.button("ENVIAR PRO KING 👑", type="primary", use_container_width=True):
-        if not titulo or not artista or not tel or not f:
-            st.error("Preenche tudo!")
+    st.markdown(f"### 🚀 Distribuição Oficial King\n**Taxa:** Tu recebes {TAXA_ARTISTA}%, King {TAXA_KING}% quando plataforma pagar no PayPal **{PAYPAL_OFICIAL}**")
+    titulo = st.text_input("Título *"); artista = st.text_input("Artista *"); tel = st.text_input("WhatsApp *")
+    f = st.file_uploader("Música MP3 *", type=['mp3','wav','m4a']); capa = st.file_uploader("Capa 3000x3000 *", type=['jpg','jpeg','png'])
+    if st.button("ENVIAR PRO KING OUVIR 👑", type="primary", use_container_width=True):
+        if not titulo or not artista or not tel or not f: st.error("Preenche título, artista, WhatsApp e música!")
         else:
             isrc, upc = gen_codes()
             with st.spinner("Enviando..."):
-                audio_url = upload_file("musicas", f)
-                capa_url = upload_file("capas", capa) if capa else None
-            if audio_url:
-                supabase.table("musicas").insert({"titulo":titulo,"artista":artista,"tel":tel,"status":"pendente","data_envio":datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),"isrc":isrc,"upc":upc,"audio_url":audio_url,"capa_url":capa_url}).execute()
-                st.success(f"Enviado! ISRC {isrc} - King vai ouvir")
-                if capa_url: st.image(capa_url, width=200)
-                st.audio(audio_url)
-                st.balloons()
+                au = upload_file("musicas", f); cp = upload_file("capas", capa) if capa else None
+            if au:
+                supabase.table("musicas").insert({"titulo":titulo,"artista":artista,"tel":tel,"status":"pendente","data_envio":datetime.datetime.now().strftime("%d/%m/%Y %H:%M"),"isrc":isrc,"upc":upc,"audio_url":au,"capa_url":cp}).execute()
+                st.success(f"✅ Enviado! ISRC: {isrc}\n\nTaxa {TAXA_ARTISTA}/{TAXA_KING} | Pagamento via {PAYPAL_OFICIAL} e Moza Banco"); st.balloons()
+                if cp: st.image(cp, width=200)
+                st.audio(au)
 
-else:
-    senha = st.text_input("Senha Dono", type="password")
-    if senha=="king2024":
+elif menu == "🔐 PAINEL KING":
+    s = st.text_input("Senha Dono", type="password")
+    if s=="king2024":
+        st.success(f"👑 King Logado - PayPal: {PAYPAL_OFICIAL}")
         pendentes = [m for m in listar() if m.get('status')=='pendente']
-        st.metric("Pra ouvir e aprovar", len(pendentes))
+        st.metric("Pra ouvir", len(pendentes))
         for m in pendentes:
             with st.container(border=True):
-                st.markdown(f"### {m['titulo']} - {m['artista']} | {m['tel']}")
+                st.markdown(f"### {m['titulo']} - {m['artista']} | 📱 {m['tel']}")
                 if m.get('capa_url'): st.image(m['capa_url'], width=200)
                 if m.get('audio_url'):
-                    st.markdown("**🔊 OUVE AQUI:**")
+                    st.markdown("🔊 **OUVE ANTES DE APROVAR:**")
                     st.audio(m['audio_url'])
-                
-                col1,col2 = st.columns(2)
-                with col1:
-                    if st.button(f"✅ APROVAR", key=f"ap{m['id']}", use_container_width=True):
-                        supabase.table("musicas").update({"status":"aprovada"}).eq("id", m['id']).execute()
-                        st.rerun()
-                with col2:
-                    if st.button(f"❌ REJEITAR", key=f"rj{m['id']}", use_container_width=True):
-                        supabase.table("musicas").delete().eq("id", m['id']).execute()
-                        st.rerun()
+                c1,c2 = st.columns(2)
+                if c1.button(f"✅ APROVAR", key=f"ap{m['id']}", use_container_width=True): supabase.table("musicas").update({"status":"aprovada"}).eq("id", m['id']).execute(); st.rerun()
+                if c2.button(f"❌ REJEITAR", key=f"rj{m['id']}", use_container_width=True): supabase.table("musicas").delete().eq("id", m['id']).execute(); st.rerun()
+    elif s: st.error("Senha errada")
+
+else: # BANCO
+    s = st.text_input("Senha Banco King", type="password")
+    if s=="king2024":
+        ganhos = listar_ganhos()
+        total = sum([float(g.get('valor_total',0)) for g in ganhos])
+        total_king = sum([float(g.get('valor_admin',0)) for g in ganhos])
+        pendente = sum([float(g.get('valor_artista',0)) for g in ganhos if g.get('status')=='pendente'])
+        pago = sum([float(g.get('valor_artista',0)) for g in ganhos if g.get('status')!='pendente'])
+
+        st.markdown(f"### 💰 BANCO OFICIAL - {PAYPAL_OFICIAL}")
+        c1,c2,c3 = st.columns(3)
+        c1.metric("Total Recebido", f"${total:.2f}")
+        c2.metric(f"Teu Lucro {TAXA_KING}%", f"${total_king:.2f}")
+        c3.metric("A Pagar", f"${pendente:.2f}")
 
         st.divider()
-        st.subheader("📺 GERAR VÍDEO PRO YOUTUBE REAL")
-        aprovadas = [m for m in listar() if m.get('status')=='aprovada']
-        for m in aprovadas:
+        col_pay, col_moza = st.columns(2)
+        with col_pay:
+            st.markdown(f"**🏦 PayPal Oficial**\n\n`{PAYPAL_OFICIAL}`")
+            st.caption(f"Saldo PayPal: ${total:.2f}")
+            st.link_button("Abrir PayPal", "https://paypal.com", use_container_width=True)
+        with col_moza:
+            st.markdown(f"**🏦 Moza Banco**\n\n`{MOZA_CONTA}`")
+            st.caption(f"Para levantamentos em Meticais")
+            st.link_button("Moza Banco", "https://www.mozabanco.co.mz", use_container_width=True)
+
+        st.divider()
+        st.subheader(f"➕ Spotify/YouTube te pagou no {PAYPAL_OFICIAL}? Adiciona aqui")
+        with st.form("add_ganho"):
+            artista_list = list(set([m['artista'] for m in listar() if m.get('status')=='aprovada']))
+            if artista_list:
+                artista = st.selectbox("Artista", artista_list)
+            else:
+                artista = st.text_input("Nome Artista")
+            titulo = st.text_input("Nome Música")
+            plat = st.selectbox("Plataforma que pagou", ["Spotify","YouTube","Apple Music","TikTok","Todas"])
+            valor = st.number_input(f"Valor recebido em {PAYPAL_OFICIAL} ($)", min_value=0.0, step=1.0)
+            tel = st.text_input("WhatsApp do artista pra pagar")
+            st.info(f"Divisão automática: Artista ${valor*TAXA_ARTISTA/100:.2f} ({TAXA_ARTISTA}%) | Tu ${valor*TAXA_KING/100:.2f} ({TAXA_KING}%)")
+            if st.form_submit_button("💰 LANÇAR NO BANCO"):
+                v_art = valor * TAXA_ARTISTA / 100
+                v_king = valor * TAXA_KING / 100
+                supabase.table("ganhos").insert({"artista":artista,"titulo":titulo,"plataforma":plat,"valor_total":valor,"percent_artista":TAXA_ARTISTA,"percent_admin":TAXA_KING,"valor_artista":v_art,"valor_admin":v_king,"status":"pendente","tel_artista":tel}).execute()
+                st.success(f"Lançado! {artista} vai receber ${v_art:.2f}")
+                st.rerun()
+
+        st.divider()
+        st.subheader("📤 PAGAR ARTISTAS - Pendentes")
+        pendentes = [g for g in ganhos if g.get('status')=='pendente']
+        if not pendentes: st.info("Nenhum pagamento pendente")
+        for g in pendentes:
             with st.container(border=True):
-                st.write(f"**{m['titulo']}** - {m['artista']}")
-                if m.get('capa_url'): st.image(m['capa_url'], width=150)
-                if st.button(f"🎬 GERAR VÍDEO MP4", key=f"vid{m['id']}"):
-                    if not m.get('audio_url') or not m.get('capa_url'):
-                        st.error("Precisa áudio + capa pra gerar vídeo")
-                    else:
-                        with st.spinner("Gerando vídeo... 30seg"):
-                            path = gerar_video(m['audio_url'], m['capa_url'], m['titulo'])
-                        if path and os.path.exists(path):
-                            with open(path, "rb") as f:
-                                st.download_button(f"📥 BAIXAR {m['titulo']}.mp4", f, file_name=f"{m['titulo']}.mp4", mime="video/mp4", key=f"down{m['id']}")
-                            st.success("Vídeo pronto! Baixa e posta no teu canal YouTube: King Slesha Moz Distribution")
-    elif senha:
+                st.markdown(f"**{g['artista']}** - {g['titulo']} | Total ${g['valor_total']} - {g['plataforma']}")
+                st.markdown(f"💸 **Pagar: ${g['valor_artista']:.2f}** | Teu: ${g['valor_admin']:.2f}")
+                st.write(f"📱 {g['tel_artista']}")
+                cc1,cc2,cc3 = st.columns(3)
+                if cc1.button("✅ Paguei Moza", key=f"mz{g['id']}", use_container_width=True):
+                    supabase.table("ganhos").update({"status":"pago_moza"}).eq("id", g['id']).execute(); st.rerun()
+                if cc2.button("✅ Paguei PayPal", key=f"pp{g['id']}", use_container_width=True):
+                    supabase.table("ganhos").update({"status":"pago_paypal"}).eq("id", g['id']).execute(); st.rerun()
+                cc3.link_button("WhatsApp", f"https://wa.me/{g['tel_artista']}?text=Ola {g['artista']}, seu repasse ${g['valor_artista']} de {g['titulo']} liberado! King Slesha - PayPal {PAYPAL_OFICIAL}", use_container_width=True)
+
+        st.subheader("✅ Histórico Pagos")
+        for g in [x for x in ganhos if x.get('status')!='pendente'][:20]:
+            st.caption(f"✅ {g['artista']} - ${g['valor_artista']} - {g['status']} - {g['plataforma']} - {g['titulo']}")
+
+    elif s:
         st.error("Senha errada")
