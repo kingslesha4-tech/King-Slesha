@@ -1,5 +1,0 @@
-streamlit
-supabase
-moviepy
-Pillow
-requests
