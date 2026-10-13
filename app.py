@@ -1,88 +1,112 @@
 import streamlit as st
-import random
-import datetime
-from fpdf import FPDF
+import pandas as pd
+from datetime import datetime
 
-st.set_page_config(page_title="King Slesha Moz", page_icon="🎵")
-st.title("King Slesha Moz - Distribuidora Oficial")
+# --- CÓDIGO NOVO PARA ESCONDER MENU FEIO DOS CLIENTES ---
+hide_style = """
+<style>
+#MainMenu {visibility: hidden;}
+header {visibility: hidden;}
+footer {visibility: hidden;}
+.stDeployButton {display:none!important;}
+[data-testid="stToolbar"] {display:none!important;}
+div[data-testid="stStatusWidget"] {display:none!important;}
+[data-testid="manage-app-button"] {display:none!important;}
+button[kind="header"] {display:none!important;}
+#stDecoration {display:none;}
+</style>
+"""
+st.markdown(hide_style, unsafe_allow_html=True)
+# --- FIM DO CÓDIGO PARA ESCONDER ---
 
-# --- TEU CODIGO ANTIGO (mantive tudo) ---
-st.header("Informacoes da Musica")
-genero = st.selectbox("Genero", ["Amapiano", "Kizomba", "Marrabenta", "Afro House", "Pandza", "Hip Hop", "R&B"])
+# --- TEU CÓDIGO ANTIGO DA DISTRIBUIDORA ---
+st.set_page_config(page_title="King Slesha Moz", page_icon="👑", layout="centered")
 
-st.divider()
-st.header("Forma de Receber 70%")
-forma = st.selectbox("Escolhe como quer receber", ["Conta Bancaria", "PayPal", "M-Pesa / E-Mola"], key="forma")
+st.markdown("""
+<h1 style='text-align: center; color: gold; background-color: black; padding: 20px; border-radius: 10px;'>
+👑 KING SLESHA MOZ - DISTRIBUIDORA
+</h1>
+""", unsafe_allow_html=True)
 
-paypal = st.text_input("Seu PayPal 70% *", placeholder="seu@gmail.com", help="Coloca teu email certo com @")
+# Inicializa banco de dados na sessão
+if 'artistas' not in st.session_state:
+    st.session_state.artistas = []
+if 'musicas' not in st.session_state:
+    st.session_state.musicas = []
 
-arquivo = st.file_uploader("MP3/WAV/M4A *", type=["mp3","wav","m4a"], help="200MB per file • MP3, WAV, M4A")
+aba = st.selectbox("Menu", ["Criar Conta Artista", "Enviar Música", "Painel Admin"])
 
-capa = st.file_uploader("Capa 3000x3000 *", type=["jpg","jpeg","png"], help="Obrigatorio 3000x3000 igual a capa que fizemos")
+if aba == "Criar Conta Artista":
+    st.subheader("Criar Conta Artista")
+    st.write("Cada cliente só cria uma conta com Email ou Google para entrar na plataforma")
 
-# --- CODIGO NOVO PARA FACEBOOK APROVAR (juntado aqui) ---
-st.divider()
-st.header("Codigo para Facebook / Instagram (Novo)")
-st.info("O Facebook so aprova distribuidora com ISRC e UPC")
+    nome = st.text_input("Nome Completo *")
+    email = st.text_input("Email *", placeholder="seu@gmail.com")
+    senha = st.text_input("Senha *", type="password")
+    telefone = st.text_input("WhatsApp")
 
-ano = datetime.datetime.now().year % 100
-numero = random.randint(1, 99999)
-isrc = f"MZ-KSM-{ano:02d}-{numero:05d}"
-upc = f"19{random.randint(100000000000, 999999999999)}"
+    if st.button("Criar Minha Conta 👑", use_container_width=True):
+        if nome and email and senha:
+            st.session_state.artistas.append({
+                "nome": nome,
+                "email": email,
+                "telefone": telefone,
+                "data": datetime.now().strftime("%d/%m/%Y")
+            })
+            st.success(f"Conta criada com sucesso {nome}! Agora vai em 'Enviar Música'")
+            st.balloons()
+        else:
+            st.error("Preenche Nome, Email e Senha!")
 
-col1, col2 = st.columns(2)
-with col1:
-    st.text_input("ISRC gerado automatico", value=isrc, disabled=True)
-with col2:
-    st.text_input("UPC gerado automatico", value=upc, disabled=True)
+elif aba == "Enviar Música":
+    st.subheader("Enviar Tua Música para Plataformas")
 
-fb_page = st.text_input("Link da tua Pagina Facebook de Musico *", placeholder="https://facebook.com/PedroManinghyOficial")
+    artista_email = st.text_input("Teu Email cadastrado")
+    titulo = st.text_input("Título da Música *")
+    genero = st.selectbox("Gênero", ["Afrobeat", "Amapiano", "Hip Hop", "R&B", "Kizomba", "Outro"])
+    arquivo = st.file_uploader("MP3 ou WAV *", type=["mp3", "wav"])
+    capa = st.file_uploader("Capa 3000x3000 *", type=["jpg", "png", "jpeg"])
 
-st.divider()
-if st.button("✅ FINALIZAR E GERAR CONTRATO 70/30", type="primary", use_container_width=True):
-    if "@" not in paypal:
-        st.error("ERRO: Teu PayPal esta sem @. Corrige: kingslesha4@gmail.com")
-    elif not arquivo:
-        st.error("Falta subir a musica MP3/WAV")
-    elif not capa:
-        st.error("Falta subir a capa 3000x3000")
-    elif not fb_page:
-        st.error("Falta colar link da Pagina Facebook")
-    else:
-        # Gera PDF
-        pdf = FPDF()
-        pdf.add_page()
-        pdf.set_font("Arial", "B", 16)
-        pdf.cell(0, 10, "CONTRATO KING SLESHA MOZ - 70/30", ln=True, align="C")
-        pdf.set_font("Arial", "", 11)
-        pdf.ln(5)
-        pdf.multi_cell(0, 7, f"""
-Artista Email: {paypal}
-Genero: {genero}
-Forma: {forma}
-Arquivo: {arquivo.name}
-ISRC: {isrc}
-UPC: {upc}
-Facebook Page: {fb_page}
-Data: {datetime.datetime.now().strftime('%d/%m/%Y')}
+    if st.button("Enviar para King Slesha Moz 🚀", use_container_width=True):
+        if titulo and arquivo and capa and artista_email:
+            st.session_state.musicas.append({
+                "titulo": titulo,
+                "artista_email": artista_email,
+                "genero": genero,
+                "status": "Recebido - Aguardando envio para Spotify",
+                "data": datetime.now().strftime("%d/%m/%Y %H:%M")
+            })
+            st.success("Música recebida! Vamos enviar para Spotify, Boomplay, Apple Music em 48h!")
+        else:
+            st.error("Preenche tudo!")
 
-1. A King Slesha Moz distribuira a obra no Spotify, Apple Music, Facebook, Instagram, TikTok.
-2. Divisao: 70% Artista, 30% King Slesha Moz.
-3. O artista confirma que a musica e 100% original.
-4. Direitos para Facebook/Instagram serao geridos via Rights Manager com ISRC {isrc}.
-5. Pagamento ate dia 30 via {forma}.
+elif aba == "Painel Admin":
+    st.subheader("Painel Admin - King Slesha Moz")
+    senha_admin = st.text_input("Senha Admin", type="password")
 
-Assinatura: _________________________
+    if senha_admin == "king2024":
+        st.success("Bem vindo King!")
 
-King Slesha Moz / BP Label Music
-Xai-Xai, Gaza - Mozambique
-        """)
-        pdf_path = f"/tmp/contrato_{isrc}.pdf"
-        pdf.output(pdf_path)
-        st.success(f"FEITO KING! ISRC: {isrc} | UPC: {upc}")
-        st.success("Agora tua distribuidora ja tem codigo que Facebook exige!")
-        st.balloons()
-        with open(pdf_path, "rb") as f:
-            st.download_button("📄 Baixar Contrato PDF", f, file_name=f"CONTRATO_{isrc}.pdf", use_container_width=True)
+        st.write(f"### Total Artistas: {len(st.session_state.artistas)}")
+        if st.session_state.artistas:
+            st.dataframe(pd.DataFrame(st.session_state.artistas))
 
-st.caption("© 2026 King Slesha Moz - Para aprovacao final, envia ISRC/UPC para music-partnerships@fb.com")
+        st.write(f"### Total Músicas: {len(st.session_state.musicas)}")
+        if st.session_state.musicas:
+            df = pd.DataFrame(st.session_state.musicas)
+            st.dataframe(df)
+
+            # Marcar como enviado
+            for i, musica in enumerate(st.session_state.musicas):
+                col1, col2 = st.columns([3,1])
+                with col1:
+                    st.write(f"{musica['titulo']} - {musica['status']}")
+                with col2:
+                    if st.button(f"Marcar Enviado", key=f"env_{i}"):
+                        st.session_state.musicas[i]['status'] = "Enviado para Plataformas ✅"
+                        st.rerun()
+    elif senha_admin:
+        st.error("Senha errada!")
+
+st.markdown("---")
+st.markdown("<center>KingSlesha.com | 70% Artista / 30% King Slesha Moz</center>", unsafe_allow_html=True
