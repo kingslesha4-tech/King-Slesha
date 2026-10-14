@@ -1,26 +1,23 @@
 import streamlit as st
 
-st.set_page_config(page_title="King Slesha Moz - Filmes", page_icon="🎬")
+st.set_page_config(page_title="King Slesha Moz", page_icon="🎬")
 
-st.title("🎬 King Slesha Moz")
-st.subheader("Filmes 50 MZN / 48h")
+# TEUS DADOS - NÃO MUDA
+CODIGO = "1245496"
+NOME = "KING SLESHA MOZ"
+NUMERO_SUPORTE = "853772668"
+VALOR = "50"
 
-st.markdown(f"""
-### 💳 Pagar M-Pesa
-**Código Comerciante:** `1245496`
-**Número:** `853772668`
-**Valor:** 50 MZN
-""")
+st.title("🎬 King Slesha Moz - Filmes")
+st.markdown(f"### 💰 {VALOR} MZN / 48 horas")
 
-numero = st.text_input("Seu número M-Pesa (84... ou 82...)")
-
-if st.button("PAGAR 50 MZN - Código 1245496", type="primary"):
-    if numero:
-        st.success(f"✅ Pedido enviado! Verifique seu {numero}")
-        st.info(f"Você vai receber solicitação para pagar 50 MZN para KING SLESHA MOZ (1245496). Digite seu PIN M-Pesa para confirmar.")
-        st.balloons()
-    else:
-        st.error("Digite seu número M-Pesa")
+st.success(f"✅ Código Oficial M-Pesa: **{CODIGO}**")
 
 st.divider()
-st.caption("Suporte: 853772668 | Código: 1245496 | Matola")
+
+st.markdown(f"""
+#### 📱 COMO PAGAR PARA RECEBER FILME:
+
+**O dinheiro cai direto no meu comerciante {CODIGO} ( {NUMERO_SUPORTE} )**
+
+**1️⃣ No teu M-Pesa digita:**
