@@ -1,1 +1,18 @@
+<!-- BOTÃO M-PESA OFICIAL 1245496 -->
+<button onclick="pagarMpesa()" style="background:#E60000;color:white;padding:15px 30px;border:none;border-radius:10px;font-weight:bold;font-size:18px;">
+💳 Pagar 50 MZN - M-Pesa
+</button>
 
+<script>
+function pagarMpesa(){
+  const codigo = "1245496"; // teu código oficial
+  const valor = "50";
+  const numeroCliente = prompt("Digite seu número M-Pesa (84...):");
+  
+  if(numeroCliente){
+    alert("✅ Pedido enviado para " + numeroCliente + "\n\nVai receber pedido M-Pesa para pagar 50 MZN para KING SLESHA MOZ (código 1245496).\n\nDigite seu PIN para confirmar.");
+    // Aqui entra chamada API M-Pesa C2B
+    // USSD: *150*00# ou API oficial
+  }
+}
+</script>
