@@ -49,25 +49,40 @@ def salvar_foto(uploaded_file, email):
         f.write(uploaded_file.getbuffer())
     return caminho
 
-ADMIN_PASSWORD = "King2026!"
-ADMIN_EMAIL = "admin@kingslesha.com"
+def e_admin(email):
+    lista_admin = ["admin@kingslesha.com", "kingslesha4@gmail.com", "kingslesha@gmail.com"]
+    return email.lower() in [e.lower() for e in lista_admin]
 
+ADMIN_PASSWORD = "King2026!"
+
+# Cria e atualiza admins
 users_init = load_users()
-tem_admin = False
+mudou = False
 for u in users_init:
-    if u.get("email") == ADMIN_EMAIL:
-        tem_admin = True
-if not tem_admin:
+    if e_admin(u.get("email","")) and u.get("role") != "admin":
+        u["role"] = "admin"
+        mudou = True
+
+# Cria admin principal se nao existe
+tem_admin_principal = False
+for u in users_init:
+    if u.get("email") == "admin@kingslesha.com":
+        tem_admin_principal = True
+
+if not tem_admin_principal:
     users_init.append({
         "id": 1,
         "nome": "King Slesha ADMIN",
-        "email": ADMIN_EMAIL,
+        "email": "admin@kingslesha.com",
         "senha": ADMIN_PASSWORD,
         "foto": None,
         "role": "admin",
         "criado": datetime.now().strftime("%d/%m/%Y %H:%M"),
         "tipo_login": "email"
     })
+    mudou = True
+
+if mudou:
     save_users(users_init)
 
 if "usuario_logado" not in st.session_state:
@@ -89,11 +104,20 @@ if st.session_state.usuario_logado is None:
                 if u.get("email") == email_l and u.get("senha") == senha_l:
                     achado = u
             if achado:
+                # Promove para admin se for da lista
+                if e_admin(achado.get("email","")):
+                    achado["role"] = "admin"
+                    for uu in users:
+                        if uu.get("id") == achado.get("id"):
+                            uu["role"] = "admin"
+                    save_users(users)
                 st.session_state.usuario_logado = achado
                 st.rerun()
             else:
                 st.error("Email ou senha errados")
+
         st.divider()
+        st.write("Login com Google")
         g_email = st.text_input("Seu Gmail", key="g_login")
         if st.button("Entrar com Google", key="btn_glogin"):
             users = load_users()
@@ -102,10 +126,12 @@ if st.session_state.usuario_logado is None:
                 if u.get("email") == g_email:
                     achado = u
             if achado:
+                if e_admin(achado.get("email","")):
+                    achado["role"] = "admin"
                 st.session_state.usuario_logado = achado
                 st.rerun()
             else:
-                st.error("Conta nao encontrada")
+                st.error("Conta nao encontrada. Crie conta.")
 
     with tab2:
         st.warning("FOTO DE PERFIL OBRIGATORIA!")
@@ -134,13 +160,14 @@ if st.session_state.usuario_logado is None:
                     st.error("Email ja existe")
                 else:
                     caminho = salvar_foto(foto_r, email_r)
+                    role_novo = "admin" if e_admin(email_r) else "artist"
                     novo = {
                         "id": len(users)+1,
                         "nome": nome_r,
                         "email": email_r,
                         "senha": senha_r,
                         "foto": caminho,
-                        "role": "artist",
+                        "role": role_novo,
                         "criado": datetime.now().strftime("%d/%m/%Y %H:%M"),
                         "tipo_login": "google" if tipo_conta == "Google" else "email"
                     }
@@ -153,13 +180,23 @@ if st.session_state.usuario_logado is None:
 
 usuario = st.session_state.usuario_logado
 
+# Promove automaticamente se for admin
+if e_admin(usuario.get("email","")) and usuario.get("role") != "admin":
+    usuario["role"] = "admin"
+    users = load_users()
+    for u in users:
+        if u.get("id") == usuario.get("id"):
+            u["role"] = "admin"
+    save_users(users)
+    st.session_state.usuario_logado = usuario
+
 with st.sidebar:
     st.write("Meu Perfil")
     if usuario.get("foto") and os.path.exists(usuario["foto"]):
         st.image(usuario["foto"], width=150)
-    st.write(usuario.get("nome",""))
+    st.write(f"**{usuario.get('nome','')}**")
     st.write(usuario.get("email",""))
-    st.write(usuario.get("role",""))
+    st.write(f"Role: {usuario.get('role','').upper()}")
     nova_foto = st.file_uploader("Trocar foto", type=["jpg","png","jpeg"], key="troca")
     if nova_foto is not None:
         if st.button("Salvar foto", key="btn_foto"):
@@ -176,12 +213,12 @@ with st.sidebar:
         st.rerun()
     st.divider()
     if usuario.get("role") == "admin":
-        menu = st.radio("MENU", ["Enviar Musica", "APROVACAO ADMIN", "Musicas no Ar", "TODAS CONTAS ARTISTAS"], key="menu_admin")
+        menu = st.radio("MENU ADMIN", ["Enviar Musica", "APROVACAO ADMIN", "Musicas no Ar", "TODAS CONTAS ARTISTAS"], key="menu_admin")
     else:
         menu = st.radio("MENU", ["Enviar Musica", "Musicas no Ar"], key="menu_art")
 
 if menu == "Enviar Musica":
-    st.subheader("Enviar musica")
+    st.subheader(f"Enviar musica - {usuario.get('nome','')}")
     nome_artista = st.text_input("Nome do Artista", value=usuario.get("nome",""))
     nome_musica = st.text_input("Nome da Musica")
     tipo = st.selectbox("Tipo", ["Single", "Album", "EP"])
@@ -213,52 +250,104 @@ if menu == "Enviar Musica":
             }
             musicas.append(nova)
             save_musicas(musicas)
-            st.success("Enviada!")
+            st.success("Enviada! Aguardando aprovacao")
             st.balloons()
 
 elif menu == "APROVACAO ADMIN":
-    st.subheader("APROVACAO")
+    if usuario.get("role") != "admin":
+        st.error("So admin")
+        st.stop()
+    st.subheader("APROVACAO - MUSICAS PENDENTES")
     musicas = load_musicas()
     pendentes = [m for m in musicas if m.get("status") == "PENDENTE"]
     st.metric("Pendentes", len(pendentes))
+    if len(pendentes) == 0:
+        st.info("Nenhuma musica pendente")
     for m in pendentes:
-        st.write(m.get("musica","") + " - " + m.get("artista",""))
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("APROVAR", key=f"ap_{m.get('id')}"):
-                for x in musicas:
-                    if x.get("id") == m.get("id"):
-                        x["status"] = "APROVADO"
-                save_musicas(musicas)
-                st.rerun()
-        with col2:
-            if st.button("REJEITAR", key=f"rej_{m.get('id')}"):
-                for x in musicas:
-                    if x.get("id") == m.get("id"):
-                        x["status"] = "REJEITADO"
-                save_musicas(musicas)
-                st.rerun()
+        with st.container():
+            c1, c2 = st.columns([1,3])
+            with c1:
+                f = m.get("user_foto")
+                if f and os.path.exists(f):
+                    st.image(f, width=80)
+                st.write(m.get("user_nome",""))
+                st.caption(m.get("user_email",""))
+            with c2:
+                st.markdown(f"<div style='border:2px solid #FFD700; padding:10px; border-radius:10px; background:#1e1e1e;'><h4>{m.get('musica','')} - {m.get('artista','')}</h4><p>{m.get('genero','')} | {m.get('tipo','')} | {m.get('data','')}</p><p>{', '.join(m.get('plataformas',[]))}</p></div>", unsafe_allow_html=True)
+                col_a, col_b = st.columns(2)
+                with col_a:
+                    if st.button("APROVAR", key=f"ap_{m.get('id')}"):
+                        for x in musicas:
+                            if x.get("id") == m.get("id"):
+                                x["status"] = "APROVADO"
+                        save_musicas(musicas)
+                        st.success("Aprovado!")
+                        st.rerun()
+                with col_b:
+                    if st.button("REJEITAR", key=f"rej_{m.get('id')}"):
+                        for x in musicas:
+                            if x.get("id") == m.get("id"):
+                                x["status"] = "REJEITADO"
+                        save_musicas(musicas)
+                        st.error("Rejeitado")
+                        st.rerun()
 
 elif menu == "TODAS CONTAS ARTISTAS":
-    st.subheader("TODAS CONTAS - ADMIN VE TUDO")
+    if usuario.get("role") != "admin":
+        st.error("So admin pode ver")
+        st.stop()
+    st.subheader("TODAS CONTAS DOS ARTISTAS")
     users = load_users()
-    st.metric("Total", len(users))
-    for u in users:
-        c1, c2 = st.columns([1,3])
-        with c1:
+    artistas = [u for u in users if u.get("role") == "artist"]
+    admins = [u for u in users if u.get("role") == "admin"]
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Total", len(users))
+    c2.metric("Artistas", len(artistas))
+    c3.metric("Admins", len(admins))
+    busca = st.text_input("Buscar por nome ou email")
+    lista = users
+    if busca:
+        lista = [u for u in users if busca.lower() in u.get("nome","").lower() or busca.lower() in u.get("email","").lower()]
+    st.markdown("### Fotos dos Artistas")
+    cols = st.columns(3)
+    for idx, u in enumerate(lista):
+        with cols[idx % 3]:
+            st.markdown("<div style='border:1px solid #FFD700; padding:10px; border-radius:10px; background:#1e1e1e; text-align:center; margin:5px;'>", unsafe_allow_html=True)
             f = u.get("foto")
             if f and os.path.exists(f):
-                st.image(f, width=80)
-        with c2:
-            st.write(u.get("nome","") + " - " + u.get("email","") + " - " + u.get("tipo_login",""))
-            st.write(u.get("criado",""))
-    st.dataframe([{"ID":u.get("id"),"Nome":u.get("nome"),"Email":u.get("email"),"Foto":"SIM" if u.get("foto") else "NAO","Tipo":u.get("tipo_login")} for u in users], use_container_width=True)
+                st.image(f, width=100)
+            else:
+                st.write("Sem foto")
+            st.write(f"**{u.get('nome','')}**")
+            st.caption(u.get("email",""))
+            st.caption(f"{u.get('role','')} | {u.get('tipo_login','')} | {u.get('criado','')}")
+            qtd = len([m for m in load_musicas() if m.get("user_id")==u.get("id")])
+            st.write(f"Musicas: {qtd}")
+            st.markdown("</div>", unsafe_allow_html=True)
+    st.divider()
+    tabela = []
+    for u in lista:
+        tabela.append({
+            "ID": u.get("id"),
+            "Nome": u.get("nome"),
+            "Email": u.get("email"),
+            "Foto": "SIM" if u.get("foto") else "NAO",
+            "Tipo": u.get("tipo_login"),
+            "Role": u.get("role"),
+            "Criado": u.get("criado")
+        })
+    st.dataframe(tabela, use_container_width=True)
 
 else:
-    st.subheader("Musicas Aprovadas")
+    st.subheader("Musicas no Ar - Aprovadas")
     musicas = load_musicas()
     aprovadas = [m for m in musicas if m.get("status") == "APROVADO"]
-    for m in aprovadas:
-        st.write(m.get("musica","") + " - " + m.get("artista",""))
+    if usuario.get("role") != "admin":
+        aprovadas = [m for m in aprovadas if m.get("user_id") == usuario.get("id")]
+    if len(aprovadas) == 0:
+        st.info("Nenhuma musica aprovada ainda")
+    else:
+        for m in aprovadas:
+            st.markdown(f"<div style='border:1px solid #FFD700; padding:10px; border-radius:10px; margin:5px; background:#1a1a1a;'><h4>{m.get('musica','')} - {m.get('artista','')}</h4><p>{m.get('user_nome','')} | {m.get('genero','')} | {m.get('data','')}</p></div>", unsafe_allow_html=True)
 
-st.sidebar.write("King-Slesha 2026")
+st.sidebar.write("King-Slesha 2026 Matola")
